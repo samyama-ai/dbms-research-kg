@@ -9,13 +9,15 @@ topics, papers, people, algorithms, systems and complexity bounds?
 - **Status counts:** open 450, partially-solved 369, empirically-open 227, solved-but-impractical 7. No page uses the template's fifth value, `stale`.
 - **Reference graph:** the existing snapshot `dbms-research.sgsnap` (kg-snapshots-v10, iteration 2026-09), 20,019 nodes and 39,393 edges. "Old graph" below means this snapshot.
 
-Each question carries one mark. The marks were checked by running queries on the old graph loaded into a local engine (version 1.11.0) on 2026-10-14.
+Questions 1–45 carry one mark each: **28 [old], 10 [partly], 7 [new]**. Group H (46–48) is unmarked on purpose, because those are questions the graph must refuse. The marks were checked by running queries on the old graph loaded into a local engine (version 1.11.0) on 2026-10-14.
 
 | Mark | Meaning |
 |---|---|
 | **[old]** | The old graph already answers it correctly. Our graph must too. |
 | **[partly]** | The old graph gives an answer, but it is incomplete or wrong. The note says why. |
 | **[new]** | The old graph can't answer it. Our graph adds what is needed. |
+
+The marks compare with the **old** graph. Where our planned graph can answer a question only in part, the note says so (Q34, Q41).
 
 ## A. Problems and topics
 
@@ -64,7 +66,7 @@ Each question carries one mark. The marks were checked by running queries on the
 31. For problem X, what is the theory SOTA and what is the systems SOTA? **[old]**
 32. Which problems have a lower bound conditional on SETH or another fine-grained hypothesis? **[old]** 154 problems.
 33. Which problems have a time bound, a space bound, or an impossibility result? **[old]**
-34. Which problems have matching upper and lower bounds, so they are closed in theory? **[new]** Needs The Gap from section 6.
+34. Which problems have matching upper and lower bounds, so they are closed in theory? **[new]** Needs The Gap from section 6. *Partly answerable in v1:* only where the page states or clearly words the gap as closed (`Gap.verdict`, schema §5); bounds are prose, so matching is not computed.
 
 ## F. Connections between problems
 
@@ -77,7 +79,7 @@ Each question carries one mark. The marks were checked by running queries on the
 
 ## G. Finding research opportunities
 
-41. Which open problems have the widest gap between upper and lower bound? **[new]** Needs section 6.
+41. Which open problems have the widest gap between upper and lower bound? **[new]** Needs section 6. *Partly answerable in v1:* the graph can list open problems whose gap the page calls open or wide (`Gap.verdict`), but it cannot measure or rank gap width, because bounds are prose.
 42. Which open problems have no researcher named as working on them? **[old]** 232 open problems.
 43. Which topics have the most future-work items? **[old]**
 44. Which future directions are shared by several problems? **[new]** Each FutureDirection belongs to one problem, so shared directions never meet.

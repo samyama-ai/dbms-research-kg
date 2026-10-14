@@ -3,6 +3,22 @@
 Work log for the DBMS Research KG, following *How to Build a Samyama KG* (Phase 1).
 Tracking issue: #1. Newest entry first.
 
+## 2026-10-14 (later) — AI review of PR #2
+
+**Who:** Krithi. The AI-Reviewer asked for changes (review 19037). All nine points addressed:
+
+| # | Point | Fix |
+|---|---|---|
+| 1 | Mark counts wrong: the file has 28 / 10 / 7, not 27 / 13 / 8; group H unmarked | Counts corrected in scope.md, this log and the PR description; group H unmarked on purpose, now said |
+| 2 | Q34 and Q41 claim more than the schema gives | `Gap.verdict` now has a keyword step over the whole §6 text, with `verdict_method`; Q34 and Q41 marked "partly answerable in v1" in scope.md and schema.md §7. Gap width is not measurable from prose, so Q41 lists by verdict, not by width |
+| 3 | Stable ids loosely specified | schema.md §2 defines the title normalisation for `paper:t:` and the known split/merge limits of `person:<slug>` |
+| 4 | Provenance on merged nodes | shared nodes carry the first page's `source_url` plus `page_count`; `source` is node-level only, DBLP-filled fields go in `enriched_by`, DBLP-only edges carry `source: dblp` |
+| 5 | Open decisions differ between documents | the same 4 decisions in schema.md §8, this log and the PR description |
+| 6 | Diagram leaves out DataSource | `FROM_SOURCE → DataSource` added to the §1 picture |
+| 7 | `worked_example` not flagged | marked as carried over from `workedExample` (renamed only) |
+| 8 | Data pin only in a git-ignored file | schema.md header now gives the full commit and says it is the committed record until Phase 2 |
+| 9 | Template placeholders left | listed under "Next" below |
+
 ## 2026-10-14 — set-up, reading, old graph measured, scope and schema drafted
 
 **Who:** Krithi, after being asked to replicate the existing DBMS Research KG in this repo
@@ -38,9 +54,11 @@ ai-research-kg.
 7. **Ran test queries** on it. All matched the catalog: 1,053 problems; status open 450,
    partially-solved 369, empirically-open 227, solved-but-impractical 7; the sample page
    cites 6 papers; the most cited paper is *Foundations of Databases* (64 problems).
-8. **Wrote [scope.md](scope.md):** 48 questions in 8 groups, each marked [old] (the old graph
-   answers it, 27), [partly] (it answers badly, 13) or [new] (it cannot, 8). Every mark was
-   checked with a query on the old graph.
+8. **Wrote [scope.md](scope.md):** 48 questions in 8 groups. Questions 1–45 are marked [old] (the
+   old graph answers it, 28), [partly] (it answers badly, 10) or [new] (it cannot, 7); every mark
+   was checked with a query on the old graph. Group H (46–48) is unmarked on purpose: those are
+   questions the graph must refuse. *(Counts corrected 2026-10-14 after review; the first
+   version said 27 / 13 / 8.)*
 9. **Wrote [schema.md](schema.md) v0.1:** a plan with 15 node labels and 16 edge types, the
    old graph's 12 labels plus `Gap`, `ResearchDirection` and `DataSource`.
 
@@ -118,7 +136,12 @@ ai-research-kg.
 3. Who reviews the Concept list and its hierarchy?
 4. Should findings 12, 13 and 18–20 be raised as issues on `samyama-ai/dbms_research`?
 
+The same four decisions are in [schema.md](schema.md) §8.
+
 ### Next
 
-Push this branch and open the Phase 1 pull request (Refs #1). After review, Phase 2:
-environment and a download script that writes the lock file.
+- Phase 2: environment and a download script that writes the lock file, so the data pin is
+  reproducible on any machine.
+- Fill the template placeholders still left in `README.md` (`{{KG_NAME}}`, `{{N}}`, `{{M}}`,
+  `{{ONE_LINE_SCOPE}}`, `{{K}}`, `{{KG_SLUG}}`, `{{SOURCES}}`) and `benchmarks/README.md`
+  (`{{KG_NAME}}`). Names can be filled in Phase 2; counts once the graph is built.
