@@ -44,7 +44,12 @@ agg demo/dbms_research.cast demo/dbms_research.gif                          # co
 **Edge types** -- {{EDGE_TYPES}}
 **Data sources** -- {{SOURCES}}
 
-See [`schema/dbms_research_kg.cypher`](schema/dbms_research_kg.cypher) for the full schema.
+The historical reference inventory has 12 node labels and 13 relationship types.
+The available local graph source is the `dbms-research.sgsnap` export, whose
+SHA-256 is checked by the builder. See [`docs/schema.md`](docs/schema.md),
+[`schema/conformance.json`](schema/conformance.json), and
+[`schema/dbms_research_kg.ttl`](schema/dbms_research_kg.ttl) for the current
+schema artifacts.
 
 ## Quick Start
 
@@ -52,11 +57,43 @@ See [`schema/dbms_research_kg.cypher`](schema/dbms_research_kg.cypher) for the f
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
-python -m etl.download_data          # fetch source data into data/
-python -m etl.loader                 # build + load the graph
-python -m mcp_server.server          # expose the KG over MCP
-pytest                               # run tests
+python -m etl.local_graph build \
+  --snapshot /home/vm/dbms-research.sgsnap \
+  --catalog build/source_catalog.json \
+  --output build/dbms_research_kg.sqlite
+python -m etl.local_graph verify --graph build/dbms_research_kg.sqlite
+python -m etl.local_graph traverse \
+  --graph build/dbms_research_kg.sqlite \
+  --problem 01-relational-theory/acyclic-join-dependencies
+python -m etl.loader --catalog build/source_catalog.json  # source-only dry run
+python -m pytest -q
 ```
+
+`etl.local_graph` uses Python's built-in SQLite support; it needs no Docker or
+graph service. It imports the verified local snapshot without changing it,
+collapses repeated same-type endpoint pairs while retaining duplicate snapshot
+edge IDs/property variants, then adds source-backed citation/authorship/SOTA
+edges and `RELATED_TO` edges for problem pairs sharing at least two mapped
+papers/concepts. The output is a persistent property-graph artifact at
+`build/dbms_research_kg.sqlite`. Re-running the build with the same inputs is
+idempotent and resumes interrupted work; an existing artifact from different
+inputs is never overwritten. The snapshot contains no source commit identifier,
+so this build preserves it as snapshot-origin data and marks added edges with the
+pinned catalog commit. The local artifact does not prove equivalence with any
+currently running graph service.
+
+Verified local artifact: **20,019 nodes**, **40,189 unique directed edges**,
+12 labels and 13 relationship types. The snapshot had 39,393 edge records but
+3,447 repeated typed endpoint pairs; those were coalesced with source edge IDs
+and conflicting properties retained. The pinned catalog contributed 1,074
+additional mapped relations and 3,169 `RELATED_TO` pairs meeting the shared
+evidence threshold. The resulting edge total exceeds 39,400 without placeholder
+nodes or arbitrary links.
+
+`etl.loader` remains the source-catalog preparation and remote Samyama loader;
+its default invocation only prints a dry-run plan. Do not use its remote `--load`
+mode to build the local SQLite artifact. See [`docs/phase3-log.md`](docs/phase3-log.md)
+for source extraction limitations.
 
 ## Structure
 ```
