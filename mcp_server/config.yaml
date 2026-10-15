@@ -1,7 +1,7 @@
 server:
-  name: {{KG_SLUG}}-kg
-  description: Query the {{KG_NAME}} knowledge graph
+  name: dbms-research-kg
+  description: Query the DBMS Research knowledge graph
 graph:
   host: 127.0.0.1
   port: 8080
-  tenant: {{KG_SLUG}}
+  tenant: dbms_research

@@ -1,8 +1,8 @@
-# {{KG_NAME}} Knowledge Graph
+# DBMS Research Knowledge Graph
 
 **{{N}} nodes. {{M}} edges. {{ONE_LINE_SCOPE}} from {{K}} sources.**
 
-![{{KG_NAME}} demo](demo/{{KG_SLUG}}.gif)
+![DBMS Research demo](demo/dbms_research.gif)
 
 > Part of the **Samyama** ecosystem — loaded into and queried via the graph engine at [samyama-ai/samyama-graph](https://github.com/samyama-ai/samyama-graph).
 > This repo holds the loader and source-data specifics for the KG.
@@ -32,8 +32,8 @@ A narrated walkthrough on a fast, real subset.
 ```bash
 python -m demo.demo                                                     # run live
 asciinema rec --overwrite --cols 92 --rows 32 --idle-time-limit 2.0 \
-  -c "bash -c 'python -m demo.demo'" demo/{{KG_SLUG}}.cast              # re-record
-agg demo/{{KG_SLUG}}.cast demo/{{KG_SLUG}}.gif                          # convert to gif
+  -c "bash -c 'python -m demo.demo'" demo/dbms_research.cast              # re-record
+agg demo/dbms_research.cast demo/dbms_research.gif                          # convert to gif
 ```
 
 ---
@@ -44,7 +44,7 @@ agg demo/{{KG_SLUG}}.cast demo/{{KG_SLUG}}.gif                          # conver
 **Edge types** -- {{EDGE_TYPES}}
 **Data sources** -- {{SOURCES}}
 
-See [`schema/{{KG_SLUG}}_kg.cypher`](schema/{{KG_SLUG}}_kg.cypher) for the full schema.
+See [`schema/dbms_research_kg.cypher`](schema/dbms_research_kg.cypher) for the full schema.
 
 ## Quick Start
 

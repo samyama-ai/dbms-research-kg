@@ -1,7 +1,7 @@
 [project]
-name = "{{KG_SLUG}}-kg"
+name = "dbms-research-kg"
 version = "0.1.0"
-description = "{{KG_NAME}} knowledge graph built on Samyama"
+description = "DBMS Research knowledge graph built on Samyama"
 requires-python = ">=3.10"
 dependencies = [
     "samyama>=0.6.0",
