@@ -7,6 +7,8 @@
 
 A surname becomes an AFFILIATED_WITH link only when exactly one author cited on
 the same page has that surname, so a bare "Wang" never picks an arbitrary Wang.
+Several names before brackets holding several institutions ("Suciu/Koutris
+(UW/Wisconsin)") give no link: the page does not say who is where.
 """
 from __future__ import annotations
 
@@ -35,8 +37,15 @@ def affiliation_mentions(item: str) -> list[tuple[str, str, str]]:
             # "Suciu (UW)": the surnames right before the bracket, joined by / or &.
             lead = re.search(r"((?:[A-ZÀ-Ý][\w'’-]+)(?:\s*[/&]\s*[A-ZÀ-Ý][\w'’-]+)*)\s*$", before_text)
             if lead:
-                for surname in re.split(r"\s*[/&]\s*", lead.group(1)):
-                    found.extend((surname, key, evidence) for key in dict.fromkeys(inside))
+                surnames = re.split(r"\s*[/&]\s*", lead.group(1))
+                institutions = list(dict.fromkeys(inside))
+                # "Suciu/Koutris (UW/Wisconsin)": several names and several institutions do not
+                # say who is where (pairing by position is wrong for "Lee/Asanović (Berkeley/MIT)"),
+                # so no affiliation is recorded.
+                if len(surnames) > 1 and len(institutions) > 1:
+                    continue
+                for surname in surnames:
+                    found.extend((surname, key, evidence) for key in institutions)
             continue
         # "TUM (Neumann, Leis)": an institution ending just before the bracket.
         before = [key for start, end, key in spans

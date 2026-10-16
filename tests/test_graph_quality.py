@@ -85,6 +85,12 @@ def test_affiliations_in_both_bracket_shapes():
                      ("Neumann", "tum"), ("Leis", "tum")}
 
 
+def test_several_names_and_several_institutions_give_no_affiliation():
+    assert affiliation_mentions("Active groups: Suciu/Koutris (UW/Wisconsin)") == []
+    pairs = {(s, k) for s, k, _ in affiliation_mentions("Gottlob (Oxford, TU Wien)")}
+    assert pairs == {("Gottlob", "oxford"), ("Gottlob", "tuwien")}
+
+
 def test_affiliation_needs_exactly_one_cited_author_with_the_surname():
     page_authors = {"suciu": [("dan suciu", "Dan Suciu")],
                     "yang": [("a yang", "A. Yang"), ("b yang", "B. Yang")]}

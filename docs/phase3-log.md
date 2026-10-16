@@ -372,7 +372,7 @@ standards audit PR.
 
 | | v5 | v6 |
 |---|---:|---:|
-| Nodes / edges | 21,381 / 55,314 | 20,211 / 53,761 |
+| Nodes / edges | 21,381 / 55,314 | 20,211 / 53,721 |
 | Paper / Person | 2,913 / 5,267 | 2,679 / 4,454 |
 | Quality / audit / questions | 18 / 22 / — | 18 / 22 / 48 (0 wrong) |
 | Tests | 153 | 173 |
@@ -401,3 +401,11 @@ standards audit PR.
    The `.sgsnap` stays out of git.
 4. **GIF:** `demo/demo.py` (ten questions, each tagged with what its answer rests on) and
    `demo/record.sh` (asciinema + agg) produce `demo/dbms-research-kg.gif`, shown in the README.
+5. **Ambiguous affiliations dropped.** Preparing the demo showed "Suciu → University of
+   Wisconsin–Madison", read from "Suciu/Koutris (UW/Wisconsin)": every name was linked to every
+   institution in the brackets. When several names precede brackets that hold several
+   institutions, the page does not say who is where, and pairing by position is also wrong
+   ("Lee/Asanović (Keystone, Berkeley/MIT)"), so no affiliation is recorded. One institution with
+   several names, or one name with several institutions, still links. AFFILIATED_WITH 469 → 429;
+   v6 is **20,211 nodes, 53,721 edges**. Gates unchanged: quality 18/18, audit 22/22, questions
+   0 wrong.
