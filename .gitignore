@@ -1,9 +1,22 @@
 .venv/
 __pycache__/
 *.pyc
-data/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+# Stray asciinema recordings stay out, but demo/*.cast is a deliverable.
 *.cast
+!demo/*.cast
 site/
 .DS_Store
 .env
-*.egg-info/
+
+# data/ is never committed. data/dbms_research/ is the catalog checkout fetched by
+# `python -m etl.download_data`, covered by its CC BY 4.0 terms, not this repo's licence --
+# see docs/data-provenance.md. build/ is rebuilt from it (about 1.5 GB of SQLite).
+/data/
+/build/
+
+# A .sgsnap and its manifest.json are shared inside the team, outside git (README, "Export
+# and import a snapshot").
+/snapshots/

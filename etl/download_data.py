@@ -129,7 +129,8 @@ def download(root: Path = CATALOG_DIR, commit: str = PINNED_COMMIT,
         git("fetch", "--quiet", "origin", cwd=root)
         sha = resolve_commit(root, commit)
     if sha is None:
-        subprocess.run(["git", "fetch", "--quiet", "origin", commit], check=False, cwd=root, capture_output=True, text=True)
+        subprocess.run(["git", "fetch", "--quiet", "origin", commit],
+                       check=False, cwd=root, capture_output=True, text=True)
         sha = resolve_commit(root, commit)
     if sha is None:
         raise CatalogError(f"commit {commit!r} was not found in {repo_url}")
