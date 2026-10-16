@@ -11,6 +11,11 @@ its source URL.
 
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue" alt="License"></a>
 
+![DBMS Research KG demo](demo/dbms-research-kg.gif)
+
+*Ten questions on the loaded graph, recorded live with `demo/record.sh`; each answer is tagged with
+what it rests on (parsed from the page, one of our rules, a computed link, or no data).*
+
 ---
 
 We asked the graph: *"Which papers are cited by the most problems?"*
@@ -44,8 +49,30 @@ python -m etl.question_check                   # the 48 scope questions
 python -m pytest -q
 ```
 
-`python -m etl.loader --catalog build/source_catalog.json` prints the load plan for a
-Samyama engine and writes nothing without `--load`. `python -m mcp_server.server` exposes
+### Load it into Samyama
+
+```bash
+docker run -d --name samyama-dbms -p 127.0.0.1:8094:8080 ghcr.io/samyama-ai/samyama-graph:latest
+python -m etl.loader --catalog build/source_catalog.json --url http://127.0.0.1:8094 --load   # ~2.5 min
+python -m demo.demo --url http://127.0.0.1:8094                                             # the narrated demo
+python -m etl.snapshot export --url http://127.0.0.1:8094   # -> snapshots/dbms-research-kg.sgsnap + manifest.json
+```
+
+Without `--load` the loader prints the load plan and writes nothing. The loader creates the
+indexes in [schema/dbms_research_kg.cypher](schema/dbms_research_kg.cypher) and fails unless every
+label and relationship type holds exactly the planned count.
+
+### Or skip the build: load the snapshot
+
+The built graph is shared inside the team as `dbms-research-kg.sgsnap` (9.5 MB), outside git like the
+other KGs' snapshots. [snapshots/manifest.json](snapshots/manifest.json) records its SHA-256, the commit
+that built it, the engine version and the count of every label and relationship type. Put the file
+in `snapshots/` and import it into a **fresh** server; import appends, so `etl.snapshot import` refuses
+a non-empty server and checks every count against the manifest afterwards.
+
+```bash
+python -m etl.snapshot import --url http://127.0.0.1:8094
+``` `python -m mcp_server.server` exposes
 read-only tools over MCP for the engine set in `mcp_server/config.yaml`.
 
 ## Schema

@@ -55,42 +55,42 @@ STORY = [
      "MATCH (p:Problem) RETURN p.status AS status, count(p) AS problems ORDER BY problems DESC"),
     ("Which topics have the most open problems?",
      "The 35 topics of TAXONOMY.md; every problem sits in exactly one.", "parsed", 5,
-     "MATCH (p:Problem {status: 'open'})-[:IN_TOPIC]->(t:Topic) "
-     "RETURN t.name AS topic, count(p) AS open_problems ORDER BY open_problems DESC, topic LIMIT 5"),
+     ("MATCH (p:Problem {status: 'open'})-[:IN_TOPIC]->(t:Topic) "
+     "RETURN t.name AS topic, count(p) AS open_problems ORDER BY open_problems DESC, topic LIMIT 5")),
     ("Which papers are cited by the most problems?",
      "One node per paper: citations by DOI, arXiv id, DBLP key or title and year are merged.", "parsed", 5,
-     "MATCH (p:Problem)-[:CITES]->(x:Paper) "
-     "RETURN x.title AS paper, x.year AS year, count(p) AS problems ORDER BY problems DESC, paper LIMIT 5"),
+     ("MATCH (p:Problem)-[:CITES]->(x:Paper) "
+     "RETURN x.title AS paper, x.year AS year, count(p) AS problems ORDER BY problems DESC, paper LIMIT 5")),
     ("Which labs are named on the most open problems?",
      "Labs named in 'Current Research', matched against a checked list of 84 institutions.", "rule", 6,
-     "MATCH (i:Institution)-[:ACTIVE_ON]->(p:Problem {status: 'open'}) "
+     ("MATCH (i:Institution)-[:ACTIVE_ON]->(p:Problem {status: 'open'}) "
      "RETURN i.name AS institution, i.kind AS kind, count(p) AS open_problems "
-     "ORDER BY open_problems DESC, institution LIMIT 6"),
+     "ORDER BY open_problems DESC, institution LIMIT 6")),
     ("Which systems are state of the art for the most problems?",
      "Names written in bold in 'State of the Art', labelled by their Theory/Systems bullet.", "rule", 6,
-     "MATCH (p:Problem)-[:STATE_OF_ART]->(s:System) "
-     "RETURN s.name AS system, s.family AS family, count(p) AS problems ORDER BY problems DESC, system LIMIT 6"),
+     ("MATCH (p:Problem)-[:STATE_OF_ART]->(s:System) "
+     "RETURN s.name AS system, s.family AS family, count(p) AS problems ORDER BY problems DESC, system LIMIT 6")),
     ("Which lower bounds rest on a fine-grained hypothesis such as SETH?",
      "'Lower Bound' text matched to computation models; conditional hardness is its own class.", "rule", 5,
-     "MATCH (p:Problem)-[:HAS_BOUND]->(b:Bound {direction: 'lower'})-[:IN_MODEL]->"
+     ("MATCH (p:Problem)-[:HAS_BOUND]->(b:Bound {direction: 'lower'})-[:IN_MODEL]->"
      "(m:ComputationModel {class: 'fine-grained'})-[:CLASSIFIED_AS]->(:TaxonomyTerm) "
      "MATCH (p)-[:IN_TOPIC]->(t:Topic) "
-     "RETURN t.name AS topic, count(DISTINCT p) AS problems ORDER BY problems DESC, topic LIMIT 5"),
+     "RETURN t.name AS topic, count(DISTINCT p) AS problems ORDER BY problems DESC, topic LIMIT 5")),
     ("Where is the gap between the bounds closed, and where is it still open?",
      "'The Gap' read for its verdict: the page's own bold word first, otherwise a keyword rule.", "rule", 5,
-     "MATCH (p:Problem)-[:HAS_GAP]->(g:Gap) "
+     ("MATCH (p:Problem)-[:HAS_GAP]->(g:Gap) "
      "RETURN g.verdict AS gap_verdict, count(p) AS problems, "
      "sum(CASE WHEN g.verdict_method = 'stated' THEN 1 ELSE 0 END) AS stated_by_the_page "
-     "ORDER BY problems DESC"),
+     "ORDER BY problems DESC")),
     ("Which problems are closest to acyclic join dependency recognition?",
      "Not stated anywhere: computed from shared cited papers and concepts, with a Jaccard score.", "computed", 5,
-     f"MATCH (a:Problem {{id: '{EXAMPLE_PROBLEM}'}})-[r:RELATED_TO]-(b:Problem) "
+     (f"MATCH (a:Problem {{id: '{EXAMPLE_PROBLEM}'}})-[r:RELATED_TO]-(b:Problem) "
      "RETURN b.title AS related_problem, r.shared_papers AS shared_papers, r.score AS score "
-     "ORDER BY score DESC, related_problem LIMIT 5"),
+     "ORDER BY score DESC, related_problem LIMIT 5")),
     ("How do the width measures nest?",
      "Concepts from 'Mathematical Foundations' with a reviewed broader-narrower hierarchy.", "rule", 5,
-     "MATCH (a:Concept)-[:GENERALIZES]->(b:Concept) WHERE a.name CONTAINS 'width' OR b.name CONTAINS 'width' "
-     "OR b.name = 'acyclicity' RETURN a.name AS broader, b.name AS narrower ORDER BY broader, narrower"),
+     ("MATCH (a:Concept)-[:GENERALIZES]->(b:Concept) WHERE a.name CONTAINS 'width' OR b.name CONTAINS 'width' "
+     "OR b.name = 'acyclicity' RETURN a.name AS broader, b.name AS narrower ORDER BY broader, narrower")),
     ("How much funding has each problem received?",
      "The catalog says nothing about funding, so the graph says nothing.", "none", 3,
      "MATCH (p:Problem) WHERE p.funding IS NOT NULL RETURN p.title AS problem, p.funding AS funding LIMIT 3"),
@@ -228,7 +228,7 @@ def connect(url: str):
     client = SamyamaClient.connect(url)
     try:
         nodes = client.query("MATCH (n) RETURN count(n)", GRAPH).records[0][0]
-    except Exception as exc:  # noqa: BLE001 - any failure here means "no usable server"
+    except Exception as exc:
         raise click.ClickException(
             f"cannot query {url} ({exc}). Start a server and load the graph:\n"
             "  docker run -d --name samyama-dbms -p 127.0.0.1:8094:8080 ghcr.io/samyama-ai/samyama-graph:latest\n"
