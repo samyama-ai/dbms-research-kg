@@ -1,9 +1,10 @@
 """Item-by-item audit of a built graph against docs/standards.md.
 
     python -m etl.audit --graph build/dbms_research_kg.schema-candidate-v5.sqlite \
-        --part taxonomies|code-lists|all [--report docs/audit-report.md]
+        --part taxonomies|code-lists|standards|all [--report docs/audit-report.md]
 
-One check per listed item: the 4 taxonomies and the 12 controlled code lists. Exit status is 0 only when every audited
+One check per listed item: the 4 taxonomies, the 12 controlled code lists and
+the 6 standards/specification groups. Exit status is 0 only when every audited
 item passes.
 """
 from __future__ import annotations
@@ -11,12 +12,16 @@ from __future__ import annotations
 import argparse
 import collections
 import json
+import re
 import sqlite3
 import sys
+from datetime import date
 from pathlib import Path
 
-from etl.conformance import load_spec
+from etl.conformance import ONTOLOGY_PATH, load_spec, validate_ontology
+from etl.source_entities import CONCEPT_HIERARCHY
 
+PINNED = "5fff7f74508a52ac238f3bb608b8c8c872489fec"
 CATALOG_STATUS = {"open": 450, "partially-solved": 369, "empirically-open": 227, "solved-but-impractical": 7}
 MAX_UNRESOLVED = 0.10
 
@@ -163,8 +168,101 @@ def audit_code_lists(g: Graph, spec: dict) -> list[dict]:
     ]
 
 
+# --- standards / specification groups (6) ----------------------------------------------
+
+def _iso_date(value):
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except (TypeError, ValueError):
+        return False
+
+
+def audit_standards(g: Graph, spec: dict) -> list[dict]:
+    all_nodes = [n for records in g.nodes.values() for n in records]
+    all_edges = [p for records in g.edges.values() for _, _, p in records]
+    prov_fields = spec["provenance_required"]
+    missing_prov = sum(1 for n in all_nodes for f in prov_fields if n.get(f) in (None, ""))
+    unpinned = sum(1 for n in all_nodes if n.get("source_path") and PINNED not in n.get("source_url", ""))
+    edge_prov = sum(1 for p in all_edges for f in spec["relationship_provenance_required"] if p.get(f) in (None, ""))
+    edge_commit = sum(1 for p in all_edges if p.get("source_commit") != PINNED)
+    datasources = g.nodes["DataSource"]
+    from_source = collections.Counter(src for src, _, _ in g.edges["FROM_SOURCE"])
+    prov = _result("PROV-O", [
+        ("every node has the provenance fields", missing_prov == 0, f"{missing_prov} missing"),
+        ("page-derived nodes link the pinned commit", unpinned == 0, f"{unpinned} unpinned"),
+        ("every edge has source, source_url, source_commit", edge_prov == 0, f"{edge_prov} missing"),
+        ("every edge is pinned to the catalog commit", edge_commit == 0, f"{edge_commit} other"),
+        ("one DataSource at the pinned version", len(datasources) == 1 and datasources[0]["version"] == PINNED,
+         f"{len(datasources)}"),
+        ("every Problem has FROM_SOURCE", all(from_source[p["id"]] == 1 for p in g.nodes["Problem"]),
+         f"{len(from_source)}/{len(g.nodes['Problem'])}"),
+    ])
+
+    concepts = {n["id"]: n["name"] for n in g.nodes["Concept"]}
+    hierarchy = [(concepts.get(s), concepts.get(d), p) for s, d, p in g.edges["GENERALIZES"]]
+    listed = {(a, b) for a, b, _ in CONCEPT_HIERARCHY}
+    terms = g.nodes["TaxonomyTerm"]
+    skos = _result("SKOS", [
+        ("taxonomy terms carry scheme and notation", all(t.get("scheme") and t.get("notation") for t in terms),
+         f"{len(terms)} terms"),
+        ("schemes are the four in the spec", {t["scheme"] for t in terms} == set(spec["taxonomy_schemes"]),
+         sorted({t["scheme"] for t in terms})),
+        ("broader links only between concepts", all(a and b for a, b, _ in hierarchy), f"{len(hierarchy)} links"),
+        ("every broader link is an enumerated pair", all((a, b) in listed for a, b, _ in hierarchy),
+         f"{sum((a, b) not in listed for a, b, _ in hierarchy)} not listed"),
+        ("every broader link has a rationale", all(p.get("rationale") for _, _, p in hierarchy), ""),
+        ("topic scheme is flat (no Topic hierarchy)", not any(
+            g.label(s) == "Topic" and g.label(d) == "Topic" for es in g.edges.values() for s, d, _ in es), ""),
+    ])
+
+    ontology = validate_ontology()
+    ttl = ONTOLOGY_PATH.read_text(encoding="utf-8")
+    undeclared_classes = [lb for lb in spec["labels"] if not re.search(rf"^kg:{lb} a owl:Class\b", ttl, re.MULTILINE)]
+    undeclared_props = [r for r in spec["relationships"]
+                        if not re.search(rf"^kg:{r} a owl:ObjectProperty\b", ttl, re.MULTILINE)]
+    rdf = _result("RDF/RDFS/OWL", [
+        ("Turtle ontology parses and matches the inventory (rdflib)", ontology["status"] == "PASS",
+         f"{ontology['status']}, {ontology.get('triple_count', '?')} triples"),
+        ("every node label is an owl:Class", not undeclared_classes,
+         ", ".join(undeclared_classes) or f"{len(spec['labels'])} declared"),
+        ("every relationship type is an owl:ObjectProperty", not undeclared_props,
+         ", ".join(undeclared_props) or f"{len(spec['relationships'])} declared"),
+    ])
+
+    papers = g.nodes["Paper"]
+    parsed_no_title = sum(1 for p in papers if p.get("parse_status") == "parsed" and not p.get("title"))
+    bad_year = sum(1 for p in papers if p.get("year") is not None and not isinstance(p["year"], int))
+    no_position = sum(1 for _, _, p in g.edges["AUTHORED_BY"] if not isinstance(p.get("position"), int))
+    dc = _result("Dublin Core / ISO 15836", [
+        ("parsed papers have a title (dcterms:title)", parsed_no_title == 0, f"{parsed_no_title} missing"),
+        ("years are integers (dcterms:issued)", bad_year == 0, f"{bad_year} not integer"),
+        ("authorship edges have a position (dcterms:creator)", no_position == 0, f"{no_position} missing"),
+        ("every problem has a subject topic (dcterms:subject)",
+         len(g.edges["IN_TOPIC"]) == len(g.nodes["Problem"]), f"{len(g.edges['IN_TOPIC'])}"),
+    ])
+
+    dois = [(p["doi"], p.get("citation_text", "")) for p in papers if p.get("doi")]
+    bad_syntax = sum(1 for d, _ in dois if not re.fullmatch(r"10\.\d{4,9}/\S+", d))
+    invented = sum(1 for d, text in dois if d.casefold() not in text.casefold())
+    doi = _result("ISO 26324 (DOI)", [
+        ("DOI syntax 10.<4-9 digits>/<suffix>", bad_syntax == 0 and bool(dois), f"{len(dois)} DOIs, {bad_syntax} bad"),
+        ("no DOI is synthesized: each occurs in its citation text", invented == 0, f"{invented} not in text"),
+    ])
+
+    bad_dates = sum(1 for n in all_nodes for f in ("retrieved_at", "source_date") if not _iso_date(n.get(f)))
+    month_fields = ("first_added", "last_reviewed", "last_substantive_update")
+    bad_months = sum(1 for p in g.nodes["Problem"] for f in month_fields
+                     if p.get(f) and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", p[f]))
+    iso = _result("ISO 8601", [
+        ("retrieved_at and source_date are full YYYY-MM-DD dates", bad_dates == 0, f"{bad_dates} bad"),
+        ("page review dates keep YYYY-MM precision", bad_months == 0, f"{bad_months} bad"),
+    ])
+    return [prov, skos, rdf, dc, doi, iso]
+
+
 PARTS = {"taxonomies": ("Taxonomies (4)", audit_taxonomies),
-         "code-lists": ("Controlled code lists (12)", audit_code_lists)}
+         "code-lists": ("Controlled code lists (12)", audit_code_lists),
+         "standards": ("Standards/specification groups (6)", audit_standards)}
 
 
 def run(path: Path, parts) -> dict:

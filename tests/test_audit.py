@@ -36,8 +36,8 @@ def broken_copy(tmp_path, label_or_rel, table, mutate, where=""):
 
 
 def test_v5_passes_every_audited_item():
-    results = run(GRAPH, ["taxonomies", "code-lists"])
-    assert [len(results[p]) for p in results] == [4, 12]
+    results = run(GRAPH, ["taxonomies", "code-lists", "standards"])
+    assert [len(results[p]) for p in results] == [4, 12, 6]
     assert all(i["status"] == "PASS" for items in results.values() for i in items)
 
 
@@ -50,3 +50,19 @@ def test_a_missing_classification_fails_the_taxonomy(tmp_path):
 def test_a_value_outside_the_code_list_fails(tmp_path):
     copy = broken_copy(tmp_path, "Problem", "nodes", lambda r: r.update(status="bogus"))
     assert status(run(copy, ["code-lists"]), "code-lists", "1.") == "FAIL"
+
+
+def test_an_invented_doi_fails_iso_26324(tmp_path):
+    copy = broken_copy(tmp_path, "Paper", "nodes", lambda r: r.update(doi="10.9999/not-in-the-text"),
+                       where="AND json_extract(properties_json,'$.doi') IS NOT NULL")
+    assert status(run(copy, ["standards"]), "standards", "ISO 26324") == "FAIL"
+
+
+def test_a_partial_date_fails_iso_8601(tmp_path):
+    copy = broken_copy(tmp_path, "Venue", "nodes", lambda r: r.update(retrieved_at="2026-10"))
+    assert status(run(copy, ["standards"]), "standards", "ISO 8601") == "FAIL"
+
+
+def test_a_missing_provenance_field_fails_prov_o(tmp_path):
+    copy = broken_copy(tmp_path, "Concept", "nodes", lambda r: r.pop("source_url"))
+    assert status(run(copy, ["standards"]), "standards", "PROV-O") == "FAIL"
