@@ -262,3 +262,18 @@ Verification command:
 The 48-question tests pass as part of the full suite, but this phase did not
 reassess their answer correctness independently. The original graph and
 candidate v2/v3 remain unchanged.
+
+## 2026-10-16 — AI review of PR #8 addressed here; PR #8 closed
+
+**Who:** Krithi, with Claude. PR #8 (`feat/local-kg-builder`) added `etl/local_graph.py`,
+which imports `etl/citations.py` and the catalog `prepare()` that only exist on this
+branch, so #8 could not run on its own. #8 is closed; its review points (review 19154)
+are fixed on this branch:
+
+| Point | Fix |
+|---|---|
+| `etl/local_graph.py` 574 lines (> 500) | split: the legacy `.sgsnap` importer moved to `etl/snapshot_graph.py`; also `etl/loader.py` → `records.py`, `finalize.py`, `engine_load.py` and `etl/conformance.py` → `alignments.py`. All files < 500 lines; old imports still work. Rebuilding onto a copy of candidate v4 was accepted, so the output is unchanged |
+| `download_data.py`: short SHA, blanket fetch fallback, missing `origin`, option-like `--commit` | fixed in PR #4 and merged here |
+| `mcp_server/config.yaml`: tenant mismatch; `host`/`port` unread | config now has the engine `url` (read by `mcp_server/server.py`) and `snapshot_tenant: dbms-research`, matching the published snapshot. The engine serves one graph per instance, so no tenant is passed to queries. Two real read-only tools replace the stub |
+| README: broken links, machine-specific path, placeholders, missing demo commands | README rewritten: no placeholders, only links to files on this branch, `~/dbms-research.sgsnap` as the documented default, no demo commands until a demo exists |
+| `docs/phase2-log.md` points | fixed in PR #4 and merged here |
