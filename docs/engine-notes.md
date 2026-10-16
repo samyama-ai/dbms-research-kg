@@ -52,7 +52,7 @@ Measured on 1.11.0 with the full graph, 20,211 nodes and 53,721 edges:
 |---|---|
 | `python -m etl.local_graph build-catalog-candidate` (SQLite, no engine) | about 15 s |
 | `python -m etl.loader --load` (indexes, nodes, edges, count check) | 150 to 260 s, depending on what else the machine is running (262 s on 2026-10-16) |
-| `python -m etl.snapshot import` of the 9.5 MB `.sgsnap` | a few seconds |
+| `python -m etl.snapshot import` of the 9.5 MB `.sgsnap`, with its count check | 1.3 s |
 
 ## Query performance
 
