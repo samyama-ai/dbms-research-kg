@@ -10,8 +10,8 @@ import pytest
 
 from etl.audit import run
 
-GRAPH = Path(__file__).resolve().parents[1] / "build" / "dbms_research_kg.schema-candidate-v5.sqlite"
-pytestmark = pytest.mark.skipif(not GRAPH.is_file(), reason="v5 candidate is not built")
+GRAPH = Path(__file__).resolve().parents[1] / "build" / "dbms_research_kg.schema-candidate-v6.sqlite"
+pytestmark = pytest.mark.skipif(not GRAPH.is_file(), reason="v6 candidate is not built")
 
 
 def status(results, part, item_prefix):
@@ -35,7 +35,7 @@ def broken_copy(tmp_path, label_or_rel, table, mutate, where=""):
     return copy
 
 
-def test_v5_passes_every_audited_item():
+def test_v6_passes_every_audited_item():
     results = run(GRAPH, ["taxonomies", "code-lists", "standards"])
     assert [len(results[p]) for p in results] == [4, 12, 6]
     assert all(i["status"] == "PASS" for items in results.values() for i in items)

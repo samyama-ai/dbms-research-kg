@@ -2,8 +2,14 @@ import pytest
 from samyama import SamyamaClient
 
 from etl.citations import paper_identity, parse_citation, person_key
-from etl.loader import (create_nodes, create_relationships, prepare,
-                        person_name_form, stable_id, validate_paper_resume_ids)
+from etl.loader import (
+    create_nodes,
+    create_relationships,
+    person_name_form,
+    prepare,
+    stable_id,
+    validate_paper_resume_ids,
+)
 from etl.repair_future_directions import audit_nodes, expected_future_ids
 
 
@@ -13,11 +19,13 @@ def test_citation_metadata_and_source_provenance():
         "— [DOI](https://doi.org/10.1145/1234)",
         page_unverified=True,
     )
+    # The page flag alone does not make a reference unverified; its own text must say so.
     assert parsed["title"] == "Database Schemes."
     assert parsed["year"] == 1983
     assert parsed["doi"] == "10.1145/1234"
     assert parsed["venue_raw"] == "JACM"
-    assert parsed["verification_status"] == "unverified"
+    assert parsed["verification_status"] == "source_only"
+    assert parse_citation("**[SOTA]** X. *T.* SIGMOD 2000 *(unverified)*")["verification_status"] == "unverified"
     assert parsed["source_verified"] is False
     assert parsed["parse_status"] == "parsed"
     assert parsed["role"] == "foundational"
@@ -33,13 +41,13 @@ def test_artifact_citations_get_source_specific_cito_mappings():
             "source_path": "topics/topic/p.md", "metadata": {}, "sections": {},
             "future_work_items": [],
             "reference_entries": [
-                "**[Artifact]** Demirbas et al. *ClockBound and bounded-error time for distributed databases.* "
-                "(AWS TimeSync ecosystem), 2021. — [GitHub](https://github.com/aws/clock-bound)",
-                "**[Artifact]** Negi, Marcus, Mao, Tatbul, Kraska, Alizadeh. "
+                ("**[Artifact]** Demirbas et al. *ClockBound and bounded-error time for distributed databases.* "
+                "(AWS TimeSync ecosystem), 2021. — [GitHub](https://github.com/aws/clock-bound)"),
+                ("**[Artifact]** Negi, Marcus, Mao, Tatbul, Kraska, Alizadeh. "
                 "*Cardinality Estimation Benchmark (CEB).* (artifact/workload), 2021. — "
-                "[GitHub](https://github.com/learnedsystems/CEB)",
-                "**[Artifact]** A. Author. *Unclassified Artifact.* 2022. "
-                "[GitHub](https://example.org/artifact)",
+                "[GitHub](https://github.com/learnedsystems/CEB)"),
+                ("**[Artifact]** A. Author. *Unclassified Artifact.* 2022. "
+                "[GitHub](https://example.org/artifact)"),
             ],
         }],
     }
@@ -202,9 +210,9 @@ def test_relationship_endpoint_types(rel, record, source, target):
     client = RecordingClient()
     create_relationships(client, rel, [record], 1)
     query = client.queries[0]
-    assert f"MATCH (a:{source} " in query
-    assert f"MATCH (b:{target} " in query
-    assert f"MERGE (a)-[r:{rel}]->(b)" in query
+    # endpoints matched as literals with WHERE (the id index is used), edge MERGEd
+    assert query.startswith(f"MATCH (v0:{source}), (v1:{target}) WHERE v0.id = ")
+    assert f"MERGE (v0)-[:{rel} " in query and query.endswith("]->(v1)")
 
 
 def test_resume_id_check_accepts_existing_legacy_paper_id_and_rejects_mismatch():

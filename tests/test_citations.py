@@ -47,3 +47,12 @@ def test_dblp_fallback():
 def test_title_year_fallback():
     parsed = {"title": "An *Example* Paper", "year": 2025}
     assert paper_identity(parsed) == "title:an example paper|year:2025"
+
+
+def test_merged_paper_takes_the_most_complete_citation():
+    from etl.citations import merge_identities
+    records = [
+        {"title": "", "year": None, "parse_status": "uncertain", "doi": "10.1145/1", "dblp_key": "conf/x/A12"},
+        {"title": "Spanner.", "year": 2012, "parse_status": "parsed", "doi": "10.1145/1"},
+    ]
+    assert merge_identities(records) == [1, 1]

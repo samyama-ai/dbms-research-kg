@@ -341,3 +341,71 @@ python -m etl.quality --graph build/dbms_research_kg.schema-candidate-v5.sqlite 
 
 Still open: human review of the project lists and crosswalks; the 48-question
 check against v5; loading v5 into a Samyama engine.
+
+## 2026-10-16 (later) — v6 candidate and the 48-question check (issue #14)
+
+**Who:** Krithi, with Claude. Branch `feat/kg-48-questions`, stacked on the
+standards audit PR.
+
+1. **Files over 500 lines split** (no output change; rebuilding onto v5 was
+   accepted): `etl/loader.py` → `records.py`, `finalize.py`, `engine_load.py`;
+   `etl/local_graph.py` → `snapshot_graph.py`; `etl/conformance.py` →
+   `alignments.py`. Old imports still work.
+2. **`python -m etl.question_check`** answers all 48 questions on the prepared
+   graph and checks each against values re-read from the raw pages with plain
+   regexes (or, for computed links, the graph's own evidence). Result:
+   17 correct, 8 consistent, 20 limited (documented partial answers whose
+   limit holds), 3 refused, 0 wrong. Report: `docs/question-report.md`.
+3. **Bugs the check found, now fixed** (graph v6):
+
+   | Question | Bug | Fix |
+   |---|---|---|
+   | Q16 | one paper split across nodes when one page cites it by DOI and another by DBLP key (164 papers, 188 extra nodes; *Foundations of Databases* 38 + 27) | `merge_identities`: same identifier, or same title and year without conflicting identifiers; two different DOIs stay two works. Paper 2,913 → 2,679; *Foundations of Databases* 65 (old graph 64) |
+   | Q12, Q24 | person-to-problem links ignored case: author "Panda" matched the algorithm PANDA, author "Tu" matched "TU Munich" on 94 pages | the surname must occur as written |
+   | Q14 | every worked example ended with the page footer | footer removed |
+   | Q22 | `refs_unverified` is a count, read as yes/no, so all 153 references on 25 pages were "unverified" | a reference is unverified only when its own text says so (15); `Problem.refs_unverified` keeps the count |
+   | Q24, Q27, Q29, Q31, Q36, Q40, Q42 | answers counted the wrong end of an edge or returned raw edge lists | rankings fixed in `etl/questions.py` |
+
+   One author list per paper (the most complete clean list among its
+   citations) lowers Person to 4,454: of the 853 names dropped since v5, 831 are
+   other spellings of a surname still present.
+
+| | v5 | v6 |
+|---|---:|---:|
+| Nodes / edges | 21,381 / 55,314 | 20,211 / 53,721 |
+| Paper / Person | 2,913 / 5,267 | 2,679 / 4,454 |
+| Quality / audit / questions | 18 / 22 / — | 18 / 22 / 48 (0 wrong) |
+| Tests | 153 | 173 |
+
+## 2026-10-16 (evening) — snapshot, GIF and two loader fixes
+
+**Who:** Krithi, with Claude, on `feat/kg-48-questions` (PR #15).
+
+1. **Merged papers take the most complete citation.** The representative of a merged paper was
+   the citation with the most identifiers, which could be one whose title or year did not parse:
+   *Spanner* (37 problems) showed with no title and 53 papers without their year. It is now the
+   parsed citation with a title, then a year, then the most identifiers. Paper (2,679) and
+   Person (4,454) are unchanged; Venue 685 → 677 and APPEARED_AT 2,605 → 2,609 follow the new
+   representatives. v6 is now **20,211 nodes, 53,761 edges**; quality 18/18, audit 22/22,
+   questions 0 wrong, 180 tests.
+2. **The engine load finishes.** `etl.loader --load` had no indexes and matched edge endpoints
+   inside `UNWIND`, which this engine resolves without the index: about 9 s per 100 edges, and the
+   load died on an HTTP timeout. The loader now runs `schema/dbms_research_kg.cypher` (an `id`
+   index per label) and writes each batch of 50 edges as literal `MATCH … WHERE … MERGE`
+   (0.01 s per 50, still idempotent). The whole graph loads in under three minutes, and the
+   loader fails unless every label and type holds exactly the planned count. RELATED_TO was also
+   looked up under the wrong key (`source_node_id` instead of `problem_id`) and would have
+   loaded no edges.
+3. **Snapshot:** `python -m etl.snapshot export|import` (ported from ai-research-kg) writes
+   `snapshots/dbms-research-kg.sgsnap` and `snapshots/manifest.json` (counts, SHA-256, commit).
+   The `.sgsnap` stays out of git.
+4. **GIF:** `demo/demo.py` (ten questions, each tagged with what its answer rests on) and
+   `demo/record.sh` (asciinema + agg) produce `demo/dbms-research-kg.gif`, shown in the README.
+5. **Ambiguous affiliations dropped.** Preparing the demo showed "Suciu → University of
+   Wisconsin–Madison", read from "Suciu/Koutris (UW/Wisconsin)": every name was linked to every
+   institution in the brackets. When several names precede brackets that hold several
+   institutions, the page does not say who is where, and pairing by position is also wrong
+   ("Lee/Asanović (Keystone, Berkeley/MIT)"), so no affiliation is recorded. One institution with
+   several names, or one name with several institutions, still links. AFFILIATED_WITH 469 → 429;
+   v6 is **20,211 nodes, 53,721 edges**. Gates unchanged: quality 18/18, audit 22/22, questions
+   0 wrong.

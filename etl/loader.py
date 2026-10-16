@@ -1,9 +1,10 @@
 """Load the validated DBMS Research catalog into an isolated Samyama instance."""
 from __future__ import annotations
 
+import collections
 import re
 
-from etl.citations import paper_identity, parse_citation, person_key
+from etl.citations import merge_identities, parse_citation, person_key
 from etl.classify import bound_kind, gap_verdict, problem_type, technique_family
 from etl.engine_load import (  # noqa: F401  (re-exported)
     create_nodes,
@@ -65,7 +66,6 @@ def prepare(catalog):
 
     problems = []
     papers_by_id = {}
-    paper_ids_by_identity = {}
     people_by_id = {}
     venues_by_id = {}
     algorithms_by_id = {}
@@ -103,6 +103,36 @@ def prepare(catalog):
                     entry = (key, author_candidates[key])
                     if entry not in by_surname.setdefault(key.split()[-1], []):
                         by_surname[key.split()[-1]].append(entry)
+    # One Paper per work: citations of the same paper on different pages share
+    # a representative citation (etl/citations.py merge_identities).
+    citation_records = []
+    for source_problem in catalog["problems"]:
+        unverified = bool(source_problem.get("metadata", {}).get("refs_unverified"))
+        for position, raw_ref in enumerate(source_problem.get("reference_entries", []), 1):
+            parsed_ref = parse_citation(raw_ref, unverified)
+            if parsed_ref["citation_normalized"]:
+                citation_records.append((source_problem["id"], position, parsed_ref,
+                                         source_problem["source_path"]))
+    representative_index = merge_identities([record[2] for record in citation_records])
+    representative = {(record[0], record[1]): citation_records[representative_index[i]]
+                      for i, record in enumerate(citation_records)}
+    # Authors come from the most complete clean author list of the work: a list
+    # with an initials-only fragment ("P.M" from "Merlin, P.M.") is a parse slip.
+    members = collections.defaultdict(list)
+    for i, rep_i in enumerate(representative_index):
+        members[rep_i].append(i)
+
+    def author_quality(i):
+        names = citation_records[i][2]["authors"]
+        clean = not any(re.fullmatch(r"(?:[A-Z]\.?[- ]?)+\.?", name.strip()) for name in names)
+        return (clean, len(names), -i)
+    author_source = {}
+    for rep_i, group in members.items():
+        best = max(group, key=author_quality)
+        for i in group:
+            record = citation_records[i]
+            author_source[(record[0], record[1])] = citation_records[best][2]
+
     authors_by_surname = {}
     for author_key, author_name in author_candidates.items():
         surname = author_key.split()[-1] if author_key.split() else ""
@@ -150,7 +180,7 @@ def prepare(catalog):
             "stale_since": meta.get("stale_since", ""),
             "catalog_provenance": meta.get("provenance", ""),
             "refs_checked": meta.get("refs_checked", ""),
-            "refs_unverified": bool(meta.get("refs_unverified", False)),
+            "refs_unverified": int(meta.get("refs_unverified") or 0),
             "problem_statement": sections.get("problem_statement", ""),
             "statement": sections.get("problem_statement", ""),
             "mathematical_foundations": sections.get("mathematical_foundations", ""),
@@ -160,7 +190,9 @@ def prepare(catalog):
             "gap_text": sections.get("gap", ""),
             "current_research": sections.get("current_research", ""),
             "future_work_text": sections.get("future_work", ""),
-            "worked_example": sections.get("worked_example", ""),
+            # §10 is the last section; drop the page footer "---\n*Part of the ...*".
+            "worked_example": re.sub(r"\n-{3,}\s*\n\*Part of the .*\Z", "",
+                                     sections.get("worked_example", ""), flags=re.DOTALL).strip(),
             "key_references": sections.get("key_references", ""),
         })
 
@@ -216,6 +248,12 @@ def prepare(catalog):
             for surname in capitalized_tokens:
                 for person_key_value, author_name in authors_by_surname.get(surname, []):
                     if " " + person_key_value + " " not in normalized_item:
+                        continue
+                    # The surname must occur as written: "PANDA" (an algorithm) and
+                    # "TU Munich" do not name the authors Panda and Tu.
+                    written = author_name.replace(",", " ").split()
+                    if not any(re.search(r"(?<![\w])" + re.escape(token) + r"(?![\w])", item)
+                               for token in written if len(token) > 1 and not token.endswith(".")):
                         continue
                     person_id = stable_id("person", person_key_value)
                     people_by_id.setdefault(person_id, {"id": person_id, "name": author_name,
@@ -285,19 +323,17 @@ def prepare(catalog):
             text = parsed["citation_normalized"]
             if not text:
                 continue
-            identity = paper_identity(parsed)
-            # Retain the legacy full-citation id for the first source occurrence.
-            # The catalog order is deterministic and this id already exists in
-            # the partially populated graph. Alternate citations reuse it.
-            paper_id = paper_ids_by_identity.setdefault(
-                identity, stable_id("paper", text.casefold()))
-            paper_metadata = {k: v for k, v in parsed.items()
+            # The paper id, metadata, authors and venue come from the representative
+            # citation of the work, so every page citing it points to one node.
+            _, _, rep_parsed, rep_path = representative[(pid, citation_position)]
+            paper_id = stable_id("paper", rep_parsed["citation_normalized"].casefold())
+            paper_metadata = {k: v for k, v in rep_parsed.items()
                               if k not in {"role", "role_raw", "role_status", "verification_status",
                                            "citation_normalized"}}
             paper_record = {"id": paper_id, **paper_metadata,
-                            "authors": "; ".join(parsed["authors"]),
-                            "authors_raw": parsed["authors_raw"],
-                            "source_path": problem["source_path"]}
+                            "authors": "; ".join(author_source[(pid, citation_position)]["authors"]),
+                            "authors_raw": rep_parsed["authors_raw"],
+                            "source_path": rep_path}
             papers_by_id.setdefault(paper_id, paper_record)
             cito_property = mapping_spec.get("cito_roles", {}).get(parsed["role"], "cites")
             citation_mapping = {}
@@ -322,16 +358,16 @@ def prepare(catalog):
                              "verification_status": parsed["verification_status"],
                              "cito_property": cito_property,
                              **citation_mapping})
-            for position, author in enumerate(parsed["authors"], 1):
+            for position, author in enumerate(author_source[(pid, citation_position)]["authors"], 1):
                 person_id = stable_id("person", person_key(author))
                 people_by_id.setdefault(person_id, {"id": person_id, "name": author,
                     "name_form": person_name_form(author), "source_path": problem["source_path"]})
                 authorships.append({"paper_id": paper_id, "person_id": person_id,
                                     "position": position})
-            if parsed["venue_raw"]:
-                venue_id = stable_id("venue", parsed["venue_raw"].casefold())
+            if rep_parsed["venue_raw"]:
+                venue_id = stable_id("venue", rep_parsed["venue_raw"].casefold())
                 venues_by_id.setdefault(venue_id, {"id": venue_id,
-                    "name": parsed["venue_raw"], "kind": venue_kind_code(parsed["venue_raw"]),
+                    "name": rep_parsed["venue_raw"], "kind": venue_kind_code(rep_parsed["venue_raw"]),
                     "source_path": problem["source_path"]})
                 appearances.append({"paper_id": paper_id, "venue_id": venue_id})
 
