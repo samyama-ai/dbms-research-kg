@@ -11,7 +11,7 @@ engine indexes are in [`../schema/dbms_research_kg.cypher`](../schema/dbms_resea
 | Graph model | labelled property graph, openCypher, Samyama Graph |
 | Source | `github.com/samyama-ai/dbms_research` at `5fff7f74508a52ac238f3bb608b8c8c872489fec` (2026-09-09), 1,053 pages, CC BY 4.0 |
 | Size | 20,211 nodes, 53,721 edges; 16 labels, 17 relationship types |
-| Questions | the 48 of [`scope.md`](scope.md), run in [`../benchmarks`](../benchmarks/README.md) |
+| Questions | the 48 of [`scope.md`](../benchmarks/scope.md), run in [`../benchmarks`](../benchmarks/README.md) |
 | Sibling KG | AI Research KG: the same edge names where the meaning is the same |
 
 ## Picture
@@ -131,7 +131,7 @@ types, 20,019 nodes, 39,393 edges), and what this schema changes:
 
 Four labels hold fewer nodes than in 2026-09, each because of a fix: Paper (citations merged by
 identity), Person (one author list per paper), Institution (only the checked list) and Algorithm
-(citations dropped). The [quality report](quality-report.md) gives the figures.
+(citations dropped). The [quality report](../benchmarks/quality-report.md) gives the figures.
 
 ## Question coverage
 
@@ -150,5 +150,5 @@ identity), Person (one author list per paper), Institution (only the checked lis
 
 1. The project taxonomies, crosswalks, institution list and concept hierarchy are our rules. They
    need a reviewer's approval before a production load.
-2. Should catalog issues found in the [phase 1 log](phase1-log.md) (findings 12, 13 and 18–20) be
-   raised on `samyama-ai/dbms_research`?
+2. Should the catalog issues found while reading it (the Worked Example section and the `[Systems]` and
+   `[Attack]` tags missing from its template) be raised on `samyama-ai/dbms_research`?

@@ -205,7 +205,7 @@ None of it is committed to this repo: `data/` and `build/` are git-ignored.
 
 ## Query catalog
 
-The 48 questions of [`docs/scope.md`](docs/scope.md), in
+The 48 questions of [`benchmarks/scope.md`](benchmarks/scope.md), in
 [`benchmarks/scope_questions.cypher`](benchmarks/scope_questions.cypher), with answers and timings
 in [`benchmarks/scope_questions.md`](benchmarks/scope_questions.md).
 
@@ -246,10 +246,10 @@ etl/
   quality.py, audit.py   content criteria; taxonomies, code lists and standards
   snapshot.py        export and import a .sgsnap
 schema/              the conformance spec (with the ontology mappings) and the engine indexes
-benchmarks/          the 48 questions as Cypher, their raw-page reference, the runner
+benchmarks/          the 48 questions, as Cypher, their raw-page reference, the runner, the reports
 mcp_server/          the MCP server
 demo/                the narrated demo and its GIF
-docs/                ontology, taxonomy, schema, standards, provenance, engine notes, reports, logs
+docs/                ontology, taxonomy, schema, standards, provenance, engine notes, coding standards
 tests/               pytest
 ```
 
@@ -265,10 +265,8 @@ tests/               pytest
 | [`docs/data-provenance.md`](docs/data-provenance.md) | The source, its terms, and which parts are our rules |
 | [`docs/coding-standards.md`](docs/coding-standards.md) | How code, queries, data and documents are written here |
 | [`docs/engine-notes.md`](docs/engine-notes.md) | Engine behaviour and load times |
-| [`docs/scope.md`](docs/scope.md) | The 48 questions the graph is built to answer |
-| [`docs/quality-report.md`](docs/quality-report.md), [`docs/audit-report.md`](docs/audit-report.md) | The generated quality and standards reports |
-| [`docs/phase1-log.md`](docs/phase1-log.md), [`phase2`](docs/phase2-log.md), [`phase3`](docs/phase3-log.md) | How the graph was built, step by step |
-| [`docs/schema-conformance-checklist.md`](docs/schema-conformance-checklist.md) | The conformance inventory made before the build |
+| [`benchmarks/scope.md`](benchmarks/scope.md) | The 48 questions the graph is built to answer |
+| [`benchmarks/quality-report.md`](benchmarks/quality-report.md), [`benchmarks/audit-report.md`](benchmarks/audit-report.md) | The generated quality and standards reports |
 
 ## Known limits
 

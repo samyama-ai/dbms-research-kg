@@ -115,7 +115,7 @@ None of these has been reviewed by a domain expert yet. Their assignments are `r
 ## What is left out, and counted
 
 `python -m etl.quality` measures each of these, and the
-[quality report](quality-report.md) gives the figures.
+[quality report](../benchmarks/quality-report.md) gives the figures.
 
 | Left out | Why |
 |---|---|
@@ -129,4 +129,4 @@ None of these has been reviewed by a domain expert yet. Their assignments are `r
 
 The graph published before this one, `dbms-research.sgsnap` (kg-snapshots-v10), is not this graph.
 `python -m etl.local_graph build --snapshot <path>` imports it into a SQLite file of its own for
-comparison; the [phase 1 log](phase1-log.md) measures it and the quality report compares the two.
+comparison, and the quality report compares the two.

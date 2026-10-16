@@ -1,7 +1,7 @@
 """Quality criteria for a built catalog candidate, on top of the structural checks.
 
     python -m etl.quality --graph build/dbms_research_kg.schema-candidate-v5.sqlite \
-        --report docs/quality-report.md
+        --report benchmarks/quality-report.md
 
 The structural checker (etl/conformance.py, etl/local_graph.py verify) proves the
 graph has the declared shape. It passes a graph with no institutions or no
@@ -25,7 +25,7 @@ from etl.source_entities import INSTITUTIONS
 
 MIN_NODES, MIN_EDGES = 20_000, 40_000
 
-# Measured on the 2026-09 reference snapshot (docs/phase1-log.md).
+# Measured on the 2026-09 reference snapshot (dbms-research.sgsnap, kg-snapshots-v10).
 OLD_NODES = {"Problem": 1053, "Topic": 35, "Paper": 2962, "Person": 5193, "Venue": 480,
              "Institution": 1407, "Concept": 34, "Algorithm": 2808, "System": 108,
              "Bound": 2106, "ComputationModel": 8, "FutureDirection": 3825}

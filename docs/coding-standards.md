@@ -56,7 +56,7 @@ measurement, a trap, a decision.
 | Property recording how a value was decided | ends `_method` | `verdict_method` |
 | Coded value | `kebab-case` text, as the catalog writes its statuses | `partially-solved` |
 | Node id | see [`taxonomy.md`](taxonomy.md#identifiers) | `paper:abda98318c49f98b20a0adf5` |
-| Benchmark question | `Q` and its number in [`scope.md`](scope.md) | `Q21` |
+| Benchmark question | `Q` and its number in [`scope.md`](../benchmarks/scope.md) | `Q21` |
 | Python function, variable | `snake_case` | `merge_identities` |
 | Python constant | `UPPER_SNAKE_CASE` | `CONCEPT_HIERARCHY` |
 
@@ -103,7 +103,7 @@ question is in it only when:
 
 | Rule | Enforced by |
 |---|---|
-| Its header is `// Q<n> · <question>`, with `n` the number in `docs/scope.md` | `tests/test_benchmarks.py` |
+| Its header is `// Q<n> · <question>`, with `n` the number in `benchmarks/scope.md` | `tests/test_benchmarks.py` |
 | It runs without error on the loaded graph | `python -m benchmarks.run` |
 | Its answer is also computed from the raw pages, without the graph parser | `benchmarks/reference.py` |
 | The two agree, or the limit of the answer is documented and holds | `python -m benchmarks.reference` (verdict never `WRONG`) |
@@ -128,7 +128,7 @@ one is not copied into the other.
 | A number quoted in a document comes from a build, not from memory | `tests/test_docs_match_data.py` for the counts |
 | Labels and edge types are listed in the same order everywhere | `tests/test_docs_match_data.py` |
 | Every coded value in `schema/conformance.json` is listed in `docs/taxonomy.md` | `tests/test_ontology_docs.py` |
-| A document describes the repo as it is; how it got there goes in a phase log | by review |
+| A document describes the repo as it is; how it got there goes in the commit message and the PR | by review |
 | A value that is our rule, not the page's, is labelled as such | by review |
 | A limit is stated next to the claim it limits | by review |
 | No tool or model credit lines in documents or commits | by review |
@@ -143,7 +143,7 @@ the tests fail until they agree.
 | Label or edge type | `schema/conformance.json`, `schema/dbms_research_kg.cypher`, the builder in `etl/`, `README.md`, `DATASET_CARD.md`, `docs/schema.md`, `docs/ontology.md` |
 | Coded value | `schema/conformance.json`, `docs/taxonomy.md` |
 | Mapping to another vocabulary | `ontology_mapping_triples` in `schema/conformance.json`, `docs/ontology.md` |
-| Benchmark question | `docs/scope.md`, `benchmarks/scope_questions.cypher`, `benchmarks/reference.py` |
+| Benchmark question | `benchmarks/scope.md`, `benchmarks/scope_questions.cypher`, `benchmarks/reference.py` |
 
 ## Safety
 

@@ -1,4 +1,4 @@
-"""Executable answer/refusal contract for all 48 questions in docs/scope.md.
+"""Executable answer/refusal contract for all 48 questions in benchmarks/scope.md.
 
 `answer_question(n, data, params)` answers question n from prepared graph
 records (the output of etl.loader.prepare). Rankings are sorted, most first.

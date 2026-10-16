@@ -1,6 +1,6 @@
 # Benchmarks
 
-The 48 questions of [docs/scope.md](../docs/scope.md), each answered twice: as Cypher on the loaded
+The 48 questions of [scope.md](scope.md), each answered twice: as Cypher on the loaded
 graph, and again from the raw catalog pages.
 
 | File | |
@@ -9,6 +9,8 @@ graph, and again from the raw catalog pages.
 | [`reference.py`](reference.py) | Every question answered again from the raw pages with plain regexes, and the verdict of the comparison |
 | [`run.py`](run.py) | Runs and times the Cypher, joins each answer to its verdict, and writes the `.md` |
 | [`scope_questions.md`](scope_questions.md) | The result: each question with its answer, rows, time and verdict |
+| [`scope.md`](scope.md) | The 48 questions the graph is built to answer, in eight groups |
+| [`quality-report.md`](quality-report.md), [`audit-report.md`](audit-report.md) | The generated reports of `python -m etl.quality` (18 criteria) and `python -m etl.audit` (22 items) |
 
 ```bash
 python -m benchmarks.reference                         # verdicts only; needs data/ and build/, no engine
@@ -35,7 +37,7 @@ the check. Each question gets one verdict:
 
 ## Adding a question
 
-1. Add it to [`docs/scope.md`](../docs/scope.md) with the next number.
+1. Add it to [`scope.md`](scope.md) with the next number.
 2. Add its answer to `etl/questions.py` and its raw-page check to `reference.py`, written from the
    question and the page, not from the Cypher.
 3. Add a block `// Q<n> · <question>` and its Cypher to `scope_questions.cypher`.

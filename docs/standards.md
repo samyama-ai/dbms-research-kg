@@ -10,7 +10,7 @@ twelve code lists are in [`taxonomy.md`](taxonomy.md). All three are declared in
 ## Standards and specification groups (6)
 
 `python -m etl.audit` checks each group item by item against the built graph
-([audit report](audit-report.md)).
+([audit report](../benchmarks/audit-report.md)).
 
 | Group | Conformance rule |
 |---|---|
@@ -86,8 +86,8 @@ Node ids are this project's own; their patterns are in
 
 On 2026-10-16 the build of the pinned commit (20,211 nodes, 53,721 edges) passes the structural
 checks of `python -m etl.local_graph verify`, the 18 content criteria of `python -m etl.quality`
-([quality report](quality-report.md)), the 22 items of `python -m etl.audit`
-([audit report](audit-report.md)) and the 48-question check of `python -m benchmarks.reference`
+([quality report](../benchmarks/quality-report.md)), the 22 items of `python -m etl.audit`
+([audit report](../benchmarks/audit-report.md)) and the 48-question check of `python -m benchmarks.reference`
 ([benchmark](../benchmarks/scope_questions.md)). All 16 labels and 17 relations are populated.
 The project-owned taxonomies, crosswalks, institution list and concept hierarchy still need a
 reviewer's approval before a production load; their assignments are `rule-based`, never

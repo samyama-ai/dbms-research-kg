@@ -153,9 +153,9 @@ Full detail is in [`docs/data-provenance.md`](docs/data-provenance.md).
 
 - `python -m etl.local_graph verify`: schema, unique ids, edge ends, provenance, and the seven
   vocabulary alignments.
-- `python -m etl.quality`: 18 content criteria, all passing ([report](docs/quality-report.md)).
+- `python -m etl.quality`: 18 content criteria, all passing ([report](benchmarks/quality-report.md)).
 - `python -m etl.audit`: 4 taxonomies, 12 code lists and 6 standards, item by item, all passing
-  ([report](docs/audit-report.md)).
+  ([report](benchmarks/audit-report.md)).
 - The 48 scope questions: each answer is recomputed from the raw pages without the graph parser,
   with 0 wrong ([benchmark](benchmarks/scope_questions.md)).
 - The loader counts every label and edge type on the engine against its plan, and fails on any

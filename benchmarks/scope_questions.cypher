@@ -1,4 +1,4 @@
-// The 48 scope questions of docs/scope.md as Cypher, run against the loaded graph.
+// The 48 scope questions of benchmarks/scope.md as Cypher, run against the loaded graph.
 // Run them with `python -m benchmarks.run --url http://127.0.0.1:8094`, which writes
 // benchmarks/scope_questions.md with each answer beside the verdict of the raw-page check
 // (python -m benchmarks.reference).
