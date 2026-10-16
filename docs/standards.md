@@ -73,7 +73,7 @@ the other three are project classification schemes and each assignment records
    `cryptographic`, `statistical`, `other`, `unclassified`. A model requires a
    matching explicit phrase in §4/§5 (`MODELS` in `etl/source_entities.py`).
 
-The **concept scheme** is the fifth, project-owned vocabulary: 90 concepts
+Besides these four taxonomies, the project-owned **concept scheme** has 90 concepts
 matched in §2 (`CONCEPTS`), with 31 reviewed `GENERALIZES` (skos:broader)
 pairs in `CONCEPT_HIERARCHY`. Each pair carries `method=curated-hierarchy` and a
 one-sentence `rationale` citing the textbook relation; a pair is emitted only
