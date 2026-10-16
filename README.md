@@ -45,8 +45,8 @@ agg demo/dbms_research.cast demo/dbms_research.gif                          # co
 **Data sources** -- {{SOURCES}}
 
 The historical reference inventory has 12 node labels and 13 relationship types.
-The available local graph source is the `dbms-research.sgsnap` export, whose
-SHA-256 is checked by the builder. See [`docs/schema.md`](docs/schema.md),
+The v1 conformance schema adds `Gap`, `ResearchDirection`, `DataSource`,
+`TaxonomyTerm`, and the associated relationship types. See [`docs/schema.md`](docs/schema.md),
 [`schema/conformance.json`](schema/conformance.json), and
 [`schema/dbms_research_kg.ttl`](schema/dbms_research_kg.ttl) for the current
 schema artifacts.
@@ -55,45 +55,49 @@ schema artifacts.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -e '.[rdf]'
 
-python -m etl.local_graph build \
-  --snapshot /home/vm/dbms-research.sgsnap \
+python -m etl.local_graph build-catalog-candidate \
   --catalog build/source_catalog.json \
-  --output build/dbms_research_kg.sqlite
-python -m etl.local_graph verify --graph build/dbms_research_kg.sqlite
+  --output build/dbms_research_kg.schema-candidate-v2.sqlite
+python -m etl.local_graph verify --graph build/dbms_research_kg.schema-candidate-v2.sqlite
+python -m etl.local_graph inspect --graph build/dbms_research_kg.schema-candidate-v2.sqlite
 python -m etl.local_graph traverse \
-  --graph build/dbms_research_kg.sqlite \
+  --graph build/dbms_research_kg.schema-candidate-v2.sqlite \
   --problem 01-relational-theory/acyclic-join-dependencies
 python -m etl.loader --catalog build/source_catalog.json  # source-only dry run
-python -m pytest -q
 ```
 
-`etl.local_graph` uses Python's built-in SQLite support; it needs no Docker or
-graph service. It imports the verified local snapshot without changing it,
-collapses repeated same-type endpoint pairs while retaining duplicate snapshot
-edge IDs/property variants, then adds source-backed citation/authorship/SOTA
-edges and `RELATED_TO` edges for problem pairs sharing at least two mapped
-papers/concepts. The output is a persistent property-graph artifact at
-`build/dbms_research_kg.sqlite`. Re-running the build with the same inputs is
-idempotent and resumes interrupted work; an existing artifact from different
-inputs is never overwritten. The snapshot contains no source commit identifier,
-so this build preserves it as snapshot-origin data and marks added edges with the
-pinned catalog commit. The local artifact does not prove equivalence with any
-currently running graph service.
+The existing artifact `build/dbms_research_kg.sqlite` is preserved as a
+12-label/13-type snapshot-derived graph (20,019 nodes, 40,189 relationships).
+The v1 candidate command writes a different file and uses only the pinned source
+catalog because the `.sgsnap` records do not carry enough per-record source paths
+to meet v1 provenance requirements. It is idempotent for identical input and
+implementation hashes, resumes only its own matching candidate, and refuses to
+overwrite unrelated SQLite files. It uses embedded SQLite; it needs no Docker or
+graph service.
 
-Verified local artifact: **20,019 nodes**, **40,189 unique directed edges**,
-12 labels and 13 relationship types. The snapshot had 39,393 edge records but
-3,447 repeated typed endpoint pairs; those were coalesced with source edge IDs
-and conflicting properties retained. The pinned catalog contributed 1,074
-additional mapped relations and 3,169 `RELATED_TO` pairs meeting the shared
-evidence threshold. The resulting edge total exceeds 39,400 without placeholder
-nodes or arbitrary links.
+The verified catalog candidate currently has 19,676 nodes and 41,916 unique
+relationships, 16 declared labels and 17 declared relationship types (15 labels
+and 15 relationship types populated). `Institution`, `AFFILIATED_WITH`, and
+`GENERALIZES` are empty because the pinned catalog does not support those claims.
+Its `RELATED_TO` edges are recomputed from pairs sharing at least two distinct
+cited papers/concepts. The candidate has fewer nodes than the snapshot artifact;
+it does not copy snapshot-only records with unverified lineage. These counts are
+not a claim of complete acceptance: the candidate passes six ontology alignment
+checks, while CiTO remains partial because the `artifact` role mapping is
+unresolved. The original snapshot graph remains a separate legacy artifact and
+does not conform to the v1 label/relationship inventory.
+
+`python -m etl.local_graph verify` reports graph integrity, Turtle validation,
+and a separate status for each alignment. The 48-question acceptance suite is
+intentionally deferred.
 
 `etl.loader` remains the source-catalog preparation and remote Samyama loader;
 its default invocation only prints a dry-run plan. Do not use its remote `--load`
 mode to build the local SQLite artifact. See [`docs/phase3-log.md`](docs/phase3-log.md)
-for source extraction limitations.
+and [`docs/schema-conformance-checklist.md`](docs/schema-conformance-checklist.md)
+for conformance results and limitations.
 
 ## Structure
 ```
