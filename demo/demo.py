@@ -62,7 +62,7 @@ STORY = [
      ("MATCH (p:Problem)-[:CITES]->(x:Paper) "
      "RETURN x.title AS paper, x.year AS year, count(p) AS problems ORDER BY problems DESC, paper LIMIT 5")),
     ("Which labs are named on the most open problems?",
-     "Labs named in 'Current Research', matched against a checked list of 84 institutions.", "rule", 6,
+     "Labs named in 'Current Research', matched against a checked list of 83 institutions.", "rule", 6,
      ("MATCH (i:Institution)-[:ACTIVE_ON]->(p:Problem {status: 'open'}) "
      "RETURN i.name AS institution, i.kind AS kind, count(p) AS open_problems "
      "ORDER BY open_problems DESC, institution LIMIT 6")),
@@ -139,7 +139,8 @@ def run_long(console: Console, client, graph_name: str, paced: bool) -> list[str
     console.print(Panel.fit(
         "[bold]Samyama · DBMS Research Knowledge Graph[/bold]\n"
         f"{problems:,} open problems · {papers:,} cited papers · {systems:,} named systems and algorithms · 35 topics\n"
-        f"[dim]source: github.com/samyama-ai/dbms_research at {str(commit)[:8]} · no external lookups, no LLM extraction[/dim]",
+        f"[dim]source: github.com/samyama-ai/dbms_research at {str(commit)[:8]}"
+        " · no external lookups, no LLM extraction[/dim]",
         border_style="cyan"))
     long_pause(1.4, paced)
 
@@ -243,7 +244,8 @@ def connect(url: str):
 @click.option("--graph", "graph_name", default=GRAPH, show_default=True, help="Graph to query.")
 @click.option("--no-pause", is_flag=True, help="Do not pace the output.")
 @click.option("--long", "long_form", is_flag=True, help="Long form: one tall report, in the case-study layout.")
-@click.option("--write-cypher", "only_write", is_flag=True, help="Write the ten queries to demo/queries.cypher and exit.")
+@click.option("--write-cypher", "only_write", is_flag=True,
+              help="Write the ten queries to demo/queries.cypher and exit.")
 def main(url, graph_name, no_pause, long_form, only_write):
     if only_write:
         click.echo(f"wrote {write_cypher()}")
@@ -274,7 +276,8 @@ def main(url, graph_name, no_pause, long_form, only_write):
 
     console.print(Panel.fit(
         "[green]Parsed from the page[/green]  status, topics, papers, bounds: as the catalog writes them\n"
-        "[magenta]Our fixed rule[/magenta]        labs, systems, models, gap verdicts, concepts: reviewed lists and rules\n"
+        "[magenta]Our fixed rule[/magenta]        labs, systems, models, gap verdicts, concepts:"
+        " reviewed lists and rules\n"
         "[yellow]Computed link[/yellow]         RELATED_TO: shared cited papers and concepts, with a score\n"
         "[red]No such data[/red]          funding, global citation counts: the graph refuses\n\n"
         "Source: github.com/samyama-ai/dbms_research (one commit, no external lookups, no LLM extraction).",

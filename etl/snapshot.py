@@ -7,13 +7,14 @@
 WHY. Building the graph needs the catalog checkout (data/, not committed) and a few minutes.
 A snapshot is the built graph itself: anyone with a Samyama server can have it in seconds.
 
-A `.sgsnap` is serialised ENGINE STATE, not a build. `snapshots/manifest.json` records the git commit
+A `.sgsnap` is serialised ENGINE STATE, not a build. `snapshots/manifest.json` (written beside the
+file; the whole `snapshots/` folder is git-ignored, share the two files together) records the git commit
 that built it, the engine version, the counts per label and relationship, and a SHA-256, so a stale
 snapshot is visible. Re-export when the code or data changes. The manifest names the file it
 describes, and `import` refuses a file/manifest pair that does not match.
 
-THE TRAP (measured by interconnect-ip-kg, 2026-09-21; copied from ai-research-kg): import APPENDS, silently. A second import
-into the same server doubles every node and edge, with no error. So `import`:
+THE TRAP (measured by interconnect-ip-kg, 2026-09-21; copied from ai-research-kg): import APPENDS,
+silently. A second import into the same server doubles every node and edge, with no error. So `import`:
   - refuses a graph that is not empty (checked by QUERY, not by the status counters), and
   - counts again afterwards and fails unless every count equals the manifest.
 This engine has no transaction to roll back and `DETACH DELETE` is not a full reset
@@ -69,7 +70,7 @@ def counts(url: str) -> dict:
 
     c = SamyamaClient.connect(url)
     one = lambda q: c.query(q, GRAPH).records[0][0]
-    rows = lambda q: c.query(q, GRAPH).records     
+    rows = lambda q: c.query(q, GRAPH).records
     out = {"nodes": one("MATCH (n) RETURN count(n)"), "edges": one("MATCH ()-[r]->() RETURN count(r)")}
     labels = sorted({lab for (labs,) in rows("MATCH (n) RETURN DISTINCT labels(n)") for lab in labs})
     types = sorted(t for (t,) in rows("MATCH ()-[r]->() RETURN DISTINCT type(r)"))
@@ -95,7 +96,8 @@ def sha256(path: Path) -> str:
 def _commit() -> str:
     """The repo commit the export was made from, '-dirty' when tracked files differ; 'unknown' if git fails."""
     try:
-        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True,
+                             capture_output=True, text=True).stdout.strip()
         dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "--", ".", ":!snapshots"],
                                cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
@@ -105,7 +107,8 @@ def _commit() -> str:
 
 def _load_manifest(path: Path) -> dict:
     if not path.exists():
-        raise click.ClickException(f"no manifest at {path}: run `python -m etl.snapshot export` first, or pass --manifest")
+        raise click.ClickException(
+            f"no manifest at {path}: run `python -m etl.snapshot export` first, or pass --manifest")
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
@@ -156,7 +159,8 @@ def import_cmd(url: str, path: Path, manifest_path: Path) -> None:
     url = url.rstrip("/")
     manifest = _load_manifest(manifest_path)
     if manifest["file"] != path.name:
-        raise click.ClickException(f"{manifest_path.name} describes {manifest['file']!r}, not {path.name!r}; pass the matching --manifest")
+        raise click.ClickException(f"{manifest_path.name} describes {manifest['file']!r}, not {path.name!r}; "
+                                   "pass the matching --manifest")
     if sha256(path) != manifest["sha256"]:
         raise click.ClickException(f"the SHA-256 of {path.name} does not match {manifest_path.name}")
     have = counts(url)["nodes"]
@@ -166,7 +170,8 @@ def import_cmd(url: str, path: Path, manifest_path: Path) -> None:
     boundary = uuid.uuid4().hex
     safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", path.name)      # header-safe: no quotes, CR or LF
     body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{safe_name}\"\r\n"
-            "Content-Type: application/octet-stream\r\n\r\n").encode() + path.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+            "Content-Type: application/octet-stream\r\n\r\n").encode()
+    body += path.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
     try:
         _post(url + "/api/snapshot/import", body, f"multipart/form-data; boundary={boundary}")
         after = counts(url)

@@ -89,13 +89,13 @@
     "computation-model-workload": {"source": "pinned §4/§5 text and explicit model term list", "hierarchy": "flat; rule assignments retain evidence"}
   },
   "ontology_alignments": {
-    "dbms-domain": {"namespace": "https://samyama.ai/kg/dbms-research/ontology#", "artifact": "schema/dbms_research_kg.ttl"},
-    "PROV-O": {"namespace": "http://www.w3.org/ns/prov#", "artifact": "schema/dbms_research_kg.ttl"},
-    "SKOS": {"namespace": "http://www.w3.org/2004/02/skos/core#", "artifact": "schema/dbms_research_kg.ttl"},
-    "Dublin Core Terms": {"namespace": "http://purl.org/dc/terms/", "artifact": "schema/dbms_research_kg.ttl"},
-    "FOAF": {"namespace": "http://xmlns.com/foaf/0.1/", "artifact": "schema/dbms_research_kg.ttl"},
-    "Schema.org": {"namespace": "https://schema.org/", "artifact": "schema/dbms_research_kg.ttl"},
-    "CiTO": {"namespace": "http://purl.org/spar/cito/", "artifact": "schema/dbms_research_kg.ttl"}
+    "dbms-domain": {"namespace": "https://samyama.ai/kg/dbms-research/ontology#", "artifact": "schema/conformance.json (ontology_mapping_triples)"},
+    "PROV-O": {"namespace": "http://www.w3.org/ns/prov#", "artifact": "schema/conformance.json (ontology_mapping_triples)"},
+    "SKOS": {"namespace": "http://www.w3.org/2004/02/skos/core#", "artifact": "schema/conformance.json (ontology_mapping_triples)"},
+    "Dublin Core Terms": {"namespace": "http://purl.org/dc/terms/", "artifact": "schema/conformance.json (ontology_mapping_triples)"},
+    "FOAF": {"namespace": "http://xmlns.com/foaf/0.1/", "artifact": "schema/conformance.json (ontology_mapping_triples)"},
+    "Schema.org": {"namespace": "https://schema.org/", "artifact": "schema/conformance.json (ontology_mapping_triples)"},
+    "CiTO": {"namespace": "http://purl.org/spar/cito/", "artifact": "schema/conformance.json (ontology_mapping_triples)"}
   },
   "ontology_datatype_properties": ["source", "source_url", "method", "retrieved_at", "source_date", "id", "title", "year", "name", "notation", "number", "role"],
   "ontology_mapping_triples": [

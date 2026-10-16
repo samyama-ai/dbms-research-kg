@@ -110,11 +110,14 @@ CONCEPTS = {
 # concepts occur in the graph.
 CONCEPT_HIERARCHY = (
     ("submodular width", "fractional hypertree width",
-     "subw(H) <= fhw(H) for every hypergraph H; submodular width is the coarser tractability measure (Marx, JACM 2013)."),
+     "subw(H) <= fhw(H) for every hypergraph H; submodular width is the coarser tractability measure "
+     "(Marx, JACM 2013)."),
     ("fractional hypertree width", "hypertree width",
-     "fhw(H) <= ghw(H) <= hw(H): fractional hypertree width relaxes the integral edge cover of hypertree width (Grohe-Marx 2014)."),
+     "fhw(H) <= ghw(H) <= hw(H): fractional hypertree width relaxes the integral edge cover of hypertree width "
+     "(Grohe-Marx 2014)."),
     ("hypertree width", "treewidth",
-     "Hypertree width extends treewidth from graphs to hypergraphs; bounded treewidth implies bounded hypertree width (Gottlob-Leone-Scarcello 2002)."),
+     "Hypertree width extends treewidth from graphs to hypergraphs; bounded treewidth implies bounded hypertree width "
+     "(Gottlob-Leone-Scarcello 2002)."),
     ("hypertree width", "acyclicity",
      "A hypergraph is alpha-acyclic exactly when its (generalized) hypertree width is 1."),
     ("acyclicity", "join tree",
@@ -132,7 +135,8 @@ CONCEPT_HIERARCHY = (
     ("tuple-generating dependency", "join dependency",
      "Join dependencies are expressible as full tuple-generating dependencies."),
     ("semiring", "provenance semiring",
-     "Provenance semirings are commutative semirings used to annotate query answers (Green-Karvounarakis-Tannen 2007)."),
+     "Provenance semirings are commutative semirings used to annotate query answers "
+     "(Green-Karvounarakis-Tannen 2007)."),
     ("data provenance", "provenance semiring",
      "Semiring provenance is one model of data provenance."),
     ("consensus", "Paxos", "Paxos is a consensus protocol."),
@@ -148,8 +152,10 @@ CONCEPT_HIERARCHY = (
     ("sketch (streaming)", "Bloom filter", "A Bloom filter is a membership sketch."),
     ("sampling", "reservoir sampling", "Reservoir sampling is a streaming sampling scheme."),
     ("nearest neighbor search", "HNSW", "HNSW is a graph index for approximate nearest neighbor search."),
-    ("nearest neighbor search", "locality-sensitive hashing", "LSH is a hashing scheme for approximate nearest neighbor search."),
-    ("nearest neighbor search", "product quantization", "Product quantization compresses vectors for nearest neighbor search."),
+    ("nearest neighbor search", "locality-sensitive hashing",
+     "LSH is a hashing scheme for approximate nearest neighbor search."),
+    ("nearest neighbor search", "product quantization",
+     "Product quantization compresses vectors for nearest neighbor search."),
     ("submodularity", "polymatroid", "A polymatroid is defined by a monotone submodular rank function."),
     ("entropy", "Shearer's lemma", "Shearer's lemma is an entropy inequality."),
     ("fractional edge cover", "AGM bound", "The AGM bound is the size bound given by a fractional edge cover."),
@@ -318,7 +324,8 @@ JOURNAL_PATTERNS = (
 )
 PREPRINT_PATTERNS = (r"\barxiv\b", r"\bcorr\b", r"\bpreprint\b", r"\beprint\b", r"\biacr\b", r"\bssrn\b")
 JOURNAL_PATTERNS += (
-    r"\bJ\. ", r"\bTrans\.", r"\bAnnals\b", r"^Artificial Intelligence$", r"\bInformation and (?:Computation|Control)\b",
+    r"\bJ\. ", r"\bTrans\.", r"\bAnnals\b", r"^Artificial Intelligence$",
+    r"\bInformation and (?:Computation|Control)\b",
     r"\bJAIR\b", r"\bEJOR\b", r"\bEconometrica\b", r"\bInternet Mathematics\b", r"\bData & Knowledge Engineering\b",
     r"\bDistributed and Parallel Databases\b", r"\bSoftware: Practice", r"\bIEEE Computer\b", r"\bTLDKS\b",
     r"\bMathematics\b", r"\bReview\b", r"\bLetters\b", r"\bMagazine\b", r"\bBulletin\b", r"\bQuarterly\b",
@@ -326,7 +333,8 @@ JOURNAL_PATTERNS += (
     r"\bACM T[A-Z]{2,}\b", r"\bIEEE T[A-Z]{2,}\b", r"\bActa\b", r"\bMathematical Programming\b",
     r"\bReal-Time Systems\b", r"\bFuture Generation Computer Systems\b", r"\bJPDC\b", r"^Machine Learning$",
     r"\bData Mining and Knowledge Discovery\b", r"\bSIGACT News\b", r"\bAdvances in\b", r"\bJEA\b",
-    r"\bComputer Networks\b", r"\bCommunications\b", r"\bJournal\b", r"\bPeer-to-Peer\b", r"\bACM SIG\w+ (?:News|Record|Review)\b",
+    r"\bComputer Networks\b", r"\bCommunications\b", r"\bJournal\b", r"\bPeer-to-Peer\b",
+    r"\bACM SIG\w+ (?:News|Record|Review)\b",
 )
 BOOK_PATTERNS = (r"Addison-Wesley", r"Morgan (?:&|and) Claypool", r"University Press|Univ\. Press", r"\bSpringer\b",
                  r"\bWiley\b", r"\bElsevier\b", r"\bO'Reilly\b", r"\bMIT Press\b", r"\bPrentice", r"\bMcGraw",

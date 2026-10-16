@@ -127,7 +127,7 @@ def prepare(catalog):
         clean = not any(re.fullmatch(r"(?:[A-Z]\.?[- ]?)+\.?", name.strip()) for name in names)
         return (clean, len(names), -i)
     author_source = {}
-    for rep_i, group in members.items():
+    for group in members.values():
         best = max(group, key=author_quality)
         for i in group:
             record = citation_records[i]
@@ -236,7 +236,8 @@ def prepare(catalog):
                      "verdict_method": verdict_method, "source_path": problem["source_path"]})
         gap_edges.append({"problem_id": pid, "target_id": gap_id})
 
-        research_items = [x.strip() for x in re.split(r"\n(?=\s*(?:[-*+] |\d+[.)] ))", sections.get("current_research", "")) if x.strip()]
+        research_items = [x.strip() for x in re.split(r"\n(?=\s*(?:[-*+] |\d+[.)] ))",
+                                                       sections.get("current_research", "")) if x.strip()]
         for position, item in enumerate(research_items, 1):
             rid = f"{pid}#research-{position}"
             frontier = "frontier — verify" in item.casefold()
@@ -349,7 +350,8 @@ def prepare(catalog):
                 else:
                     citation_mapping = {
                         "artifact_kind": "unspecified",
-                        "cito_mapping_note": "No source-specific mapping is configured; generic cito:cites fallback is used.",
+                        "cito_mapping_note": ("No source-specific mapping is configured; "
+                                              "generic cito:cites fallback is used."),
                     }
             citations.append({"problem_id": pid, "paper_id": paper_id,
                              "position": citation_position,

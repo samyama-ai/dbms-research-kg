@@ -18,7 +18,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from etl.conformance import ONTOLOGY_PATH, load_spec, validate_ontology
+from etl.conformance import load_spec, validate_ontology
 from etl.source_entities import CONCEPT_HIERARCHY
 
 PINNED = "5fff7f74508a52ac238f3bb608b8c8c872489fec"
@@ -77,7 +77,8 @@ def audit_taxonomies(g: Graph, spec: dict) -> list[dict]:
         share = unresolved / len(members) if members else 1.0
         notation = sum(1 for t in scheme_terms if t.get("notation") != t.get("code"))
         return _result(item, [
-            ("terms equal the closed code list", term_codes == set(codes), f"{len(term_codes)} terms / {len(codes)} codes"),
+            ("terms equal the closed code list", term_codes == set(codes),
+             f"{len(term_codes)} terms / {len(codes)} codes"),
             ("every member classified exactly once in the scheme", one_each == len(members) and members != [],
              f"{one_each}/{len(members)}"),
             ("assigned term matches the member's own code", wrong_code == 0, f"{wrong_code} mismatches"),
@@ -216,17 +217,15 @@ def audit_standards(g: Graph, spec: dict) -> list[dict]:
     ])
 
     ontology = validate_ontology()
-    ttl = ONTOLOGY_PATH.read_text(encoding="utf-8")
-    undeclared_classes = [lb for lb in spec["labels"] if not re.search(rf"^kg:{lb} a owl:Class\b", ttl, re.MULTILINE)]
-    undeclared_props = [r for r in spec["relationships"]
-                        if not re.search(rf"^kg:{r} a owl:ObjectProperty\b", ttl, re.MULTILINE)]
-    rdf = _result("RDF/RDFS/OWL", [
-        ("Turtle ontology parses and matches the inventory (rdflib)", ontology["status"] == "PASS",
-         f"{ontology['status']}, {ontology.get('triple_count', '?')} triples"),
-        ("every node label is an owl:Class", not undeclared_classes,
-         ", ".join(undeclared_classes) or f"{len(spec['labels'])} declared"),
-        ("every relationship type is an owl:ObjectProperty", not undeclared_props,
-         ", ".join(undeclared_props) or f"{len(spec['relationships'])} declared"),
+    undeclared_labels = sorted(set(g.nodes) - set(spec["labels"]))
+    undeclared_rels = sorted(set(g.edges) - set(spec["relationships"]))
+    rdf = _result("RDF/RDFS (declared mappings)", [
+        ("mappings in schema/conformance.json are well-formed and use every declared vocabulary",
+         ontology["status"] == "PASS", f"{ontology['status']}, {ontology.get('mapping_count', '?')} mappings"),
+        ("every node label in the graph is declared in the schema", not undeclared_labels,
+         ", ".join(undeclared_labels) or f"{len(g.nodes)} labels declared"),
+        ("every relationship type in the graph is declared with its domain and range", not undeclared_rels,
+         ", ".join(undeclared_rels) or f"{len(g.edges)} types declared"),
     ])
 
     papers = g.nodes["Paper"]

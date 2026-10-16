@@ -46,7 +46,8 @@ COMPLEXITY_CLASS = re.compile(
     r"^(?:co-?|#|\d|N)*(?:P|NP|PTIME|EXPTIME|EXP|PSPACE|EXPSPACE|LOGSPACE|L|NL|NC|AC0|TC0|W\[\d\]|FPT|XP|APX|"
     r"PH|BPP|RP|ZPP|DP|UP|ELEMENTARY)(?:[- ](?:complete|hard|completeness|hardness|membership))?$", re.IGNORECASE)
 NON_NAME_SUFFIX = re.compile(r"-(?:backed|based|style|like|aware|time|free|only|level|wise|driven)$", re.IGNORECASE)
-SYSTEM_HINT = re.compile(r"(?:DB|SQL|Base|Store|Engine|Lake|House|Graph|Stream|KV|FS)\b|^Apache |^Azure |^AWS |^Google ")
+SYSTEM_HINT = re.compile(
+    r"(?:DB|SQL|Base|Store|Engine|Lake|House|Graph|Stream|KV|FS)\b|^Apache |^Azure |^AWS |^Google ")
 
 
 def _load_words() -> frozenset[str]:

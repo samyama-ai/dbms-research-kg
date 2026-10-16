@@ -9,17 +9,15 @@ from pathlib import Path
 from etl.conformance import SPEC_PATH, load_spec, validate_ontology
 
 
-def validate_sqlite_alignments(path: Path, *, spec_path: Path = SPEC_PATH,
-                               ontology_path: Path | None = None) -> dict:
+def validate_sqlite_alignments(path: Path, *, spec_path: Path = SPEC_PATH) -> dict:
     """Audit ontology-alignment support in a persisted SQLite property graph.
 
-    This reads only. A mapping declaration and RDF parsing are reported
+    This reads only. The ontology mappings declared in schema/conformance.json are checked
     separately from the presence and quality of corresponding graph data.
     RDF instance triples are not expected by the documented LPG architecture.
     """
     spec = load_spec(spec_path)
-    ontology_path = ontology_path or spec_path.parent / "dbms_research_kg.ttl"
-    mapping = validate_ontology(ontology_path, spec_path)
+    mapping = validate_ontology(spec_path)
     conn = sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True)
     try:
         metadata = dict(conn.execute("SELECT key,value FROM graph_metadata"))

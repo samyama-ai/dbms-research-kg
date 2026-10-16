@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from etl.question_check import CATALOG, DATA, check_all
+from benchmarks.reference import CATALOG, DATA, check_all
 
 pytestmark = pytest.mark.skipif(not (CATALOG.is_file() and (DATA / "topics").is_dir()),
                                 reason="needs build/source_catalog.json and data/dbms_research")

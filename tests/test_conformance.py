@@ -118,44 +118,38 @@ def test_citation_edge_requires_position_and_pinned_provenance(conforming_data):
     assert any("missing required relationship property position" in error for error in errors)
 
 
-def test_ontology_parser_checks_inventory_mappings_and_datatype_properties():
-    pytest.importorskip("rdflib")
+def test_declared_ontology_mappings_are_valid():
     result = validate_ontology()
     assert result["status"] == "PASS", result["errors"]
-    assert result["triple_count"] > 100
+    assert result["mapping_count"] >= 30
 
 
-def test_ontology_parser_rejects_missing_vocabulary_mapping(tmp_path):
-    pytest.importorskip("rdflib")
-    from etl.conformance import ONTOLOGY_PATH
+def _spec_copy(tmp_path, change):
+    import json
 
-    text = ONTOLOGY_PATH.read_text(encoding="utf-8")
-    broken = tmp_path / "broken.ttl"
-    broken.write_text(text.replace(
-        "kg:Topic a owl:Class ; rdfs:subClassOf skos:Concept ;",
-        "kg:Topic a owl:Class ;",
-        1,
-    ), encoding="utf-8")
-    result = validate_ontology(broken)
+    from etl.conformance import SPEC_PATH
+    spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
+    change(spec)
+    path = tmp_path / "conformance.json"
+    path.write_text(json.dumps(spec), encoding="utf-8")
+    return path
+
+
+def test_mapping_with_an_unknown_predicate_fails(tmp_path):
+    path = _spec_copy(tmp_path, lambda s: s["ontology_mapping_triples"].append(
+        ["kg:Topic", "owl:equivalentClass", "skos:Concept"]))
+    result = validate_ontology(path)
     assert result["status"] == "FAIL"
-    assert any("kg:Topic rdfs:subClassOf skos:Concept" in error
-               for error in result["errors"])
+    assert any("predicate not allowed" in e for e in result["errors"])
 
 
-def test_ontology_parser_rejects_wrong_relationship_range(tmp_path):
-    pytest.importorskip("rdflib")
-    from etl.conformance import ONTOLOGY_PATH
-
-    text = ONTOLOGY_PATH.read_text(encoding="utf-8")
-    broken = tmp_path / "wrong-range.ttl"
-    broken.write_text(text.replace(
-        "kg:CITES a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Paper ;",
-        "kg:CITES a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Person ;",
-        1,
-    ), encoding="utf-8")
-    result = validate_ontology(broken)
+def test_declared_vocabulary_without_any_mapping_fails(tmp_path):
+    def drop_foaf(spec):
+        spec["ontology_mapping_triples"] = [m for m in spec["ontology_mapping_triples"]
+                                            if not m[2].startswith("foaf:")]
+    result = validate_ontology(_spec_copy(tmp_path, drop_foaf))
     assert result["status"] == "FAIL"
-    assert any("wrong RDF range for CITES" in error for error in result["errors"])
+    assert any("FOAF is declared but no mapping uses it" in e for e in result["errors"])
 
 
 def test_existing_snapshot_is_not_misreported_as_v1_conformant():

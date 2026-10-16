@@ -14,7 +14,7 @@ MATCH (p:Problem {status: 'open'})-[:IN_TOPIC]->(t:Topic) RETURN t.name AS topic
 MATCH (p:Problem)-[:CITES]->(x:Paper) RETURN x.title AS paper, x.year AS year, count(p) AS problems ORDER BY problems DESC, paper LIMIT 5;
 
 // 4. Which labs are named on the most open problems?  (rests on: rule)
-// Labs named in 'Current Research', matched against a checked list of 84 institutions.
+// Labs named in 'Current Research', matched against a checked list of 83 institutions.
 MATCH (i:Institution)-[:ACTIVE_ON]->(p:Problem {status: 'open'}) RETURN i.name AS institution, i.kind AS kind, count(p) AS open_problems ORDER BY open_problems DESC, institution LIMIT 6;
 
 // 5. Which systems are state of the art for the most problems?  (rests on: rule)

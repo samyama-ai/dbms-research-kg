@@ -141,9 +141,11 @@ def finalize(data: dict, source: dict) -> dict:
     for edge in data["CITES"]:
         pages_by_entity["Paper"].setdefault(edge["target_id"], set()).add(edge["problem_id"])
     for edge in data["AUTHORED_BY"]:
-        pages_by_entity["Person"].setdefault(edge["target_id"], set()).update(pages_by_paper.get(edge["paper_id"], set()))
+        pages_by_entity["Person"].setdefault(edge["target_id"], set()).update(
+            pages_by_paper.get(edge["paper_id"], set()))
     for edge in data["APPEARED_AT"]:
-        pages_by_entity["Venue"].setdefault(edge["target_id"], set()).update(pages_by_paper.get(edge["paper_id"], set()))
+        pages_by_entity["Venue"].setdefault(edge["target_id"], set()).update(
+            pages_by_paper.get(edge["paper_id"], set()))
     for edge in data["RESTS_ON"]:
         pages_by_entity["Concept"].setdefault(edge["target_id"], set()).add(edge["problem_id"])
     for edge in data["STATE_OF_ART"]:
@@ -151,7 +153,8 @@ def finalize(data: dict, source: dict) -> dict:
     bound_problem = {b["id"]: b["problem_id"] for b in data["Bound"]}
     for edge in data["IN_MODEL"]:
         if edge["bound_id"] in bound_problem:
-            pages_by_entity["ComputationModel"].setdefault(edge["target_id"], set()).add(bound_problem[edge["bound_id"]])
+            pages_by_entity["ComputationModel"].setdefault(edge["target_id"], set()).add(
+                bound_problem[edge["bound_id"]])
     for label, pages in pages_by_entity.items():
         for node in data[label]:
             node["page_count"] = len(pages.get(node["id"], set())) or 1
@@ -162,7 +165,8 @@ def finalize(data: dict, source: dict) -> dict:
                      "HAS_RESEARCH", "ACTIVE_ON", "AFFILIATED_WITH", "GENERALIZES",
                      "RELATED_TO", "FROM_SOURCE", "CLASSIFIED_AS"}:
             continue
-        method = "list-matched" if label in {"Topic", "Concept", "Algorithm", "System", "ComputationModel", "TaxonomyTerm", "Institution"} else "parsed"
+        listed = {"Topic", "Concept", "Algorithm", "System", "ComputationModel", "TaxonomyTerm", "Institution"}
+        method = "list-matched" if label in listed else "parsed"
         annotate_provenance(records, source=source, default_method=method)
     node_labels = set(json.loads(spec_path.read_text(encoding="utf-8"))["labels"])
     node_source_paths = {

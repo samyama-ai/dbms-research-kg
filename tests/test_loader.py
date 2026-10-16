@@ -298,3 +298,8 @@ def test_future_direction_index_shift_retry_is_detected_and_replay_uses_canonica
         }], 10)
     assert client.status().nodes == 3  # duplicate remains pending repair; no third ID appears
     assert client.status().edges == 1  # retry reuses the same canonical relationship
+
+
+def test_missing_values_are_left_out_not_written_as_empty_strings():
+    from etl.records import cypher_map
+    assert cypher_map({"id": "p", "year": None, "title": "T"}) == "{id: 'p', title: 'T'}"

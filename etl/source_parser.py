@@ -112,6 +112,18 @@ def topic_title(folder):
     return None
 
 
+TAXONOMY_ROW = re.compile(r"^\|\s*\d\d\s*\|[^|]*\|\s*\[`([^`]+)`\][^|]*\|\s*(.*?)\s*\|\s*$")
+
+
+def topic_scopes(root):
+    """Topic id -> the Scope column of TAXONOMY.md ("| 01 | Name | [`01-x`](...) | Scope |")."""
+    path = root / "TAXONOMY.md"
+    if not path.is_file():
+        return {}
+    rows = (TAXONOMY_ROW.match(line) for line in path.read_text(encoding="utf-8").splitlines())
+    return {row.group(1): row.group(2) for row in rows if row and row.group(2)}
+
+
 def list_items(text):
     result = []
     for line in text.splitlines():
@@ -199,6 +211,7 @@ def build_catalog(root, expected_problems=1053, expected_topics=35, check_commit
             errors.append(f"{problem['id']}: topic directory not found: {problem['topic_id']}")
 
     topic_ids = sorted({p["topic_id"] for p in problems})
+    scopes = topic_scopes(root)
     topics = []
     for topic_id in topic_ids:
         title = topic_title(topic_dirs[topic_id]) if topic_id in topic_dirs else None
@@ -207,6 +220,7 @@ def build_catalog(root, expected_problems=1053, expected_topics=35, check_commit
         topics.append({
             "id": topic_id,
             "title": title,
+            "scope": scopes.get(topic_id, ""),
             "problem_count": sum(p["topic_id"] == topic_id for p in problems),
             "source_path": f"topics/{topic_id}",
         })

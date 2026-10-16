@@ -9,7 +9,6 @@ from datetime import date
 from pathlib import Path
 
 SPEC_PATH = Path(__file__).resolve().parents[1] / "schema" / "conformance.json"
-ONTOLOGY_PATH = SPEC_PATH.parent / "dbms_research_kg.ttl"
 
 
 class ConformanceError(ValueError):
@@ -20,94 +19,60 @@ def load_spec(path: Path = SPEC_PATH) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def validate_ontology(path: Path = ONTOLOGY_PATH, spec_path: Path = SPEC_PATH) -> dict:
-    """Parse and check the ontology mapping when rdflib is installed.
+PREFIXES = {
+    "kg": "https://samyama.ai/kg/dbms-research/ontology#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "schema": "https://schema.org/",
+    "cito": "http://purl.org/spar/cito/",
+}
+MAPPING_PREDICATES = {"rdfs:subClassOf", "rdfs:subPropertyOf", "rdfs:seeAlso",
+                      "kg:mapsTo", "kg:mapsToScheme", "kg:mapsToCiTO"}
 
-    Absence of a parser is reported as NOT VERIFIED; textual declarations are
-    not promoted to a successful RDF/Turtle validation result.
+
+def validate_ontology(spec_path: Path = SPEC_PATH) -> dict:
+    """Check the ontology mappings declared in schema/conformance.json.
+
+    The project ships no RDF file: each label, relationship and property is mapped to the
+    external vocabularies by the `ontology_mapping_triples` of the spec. Every mapping must use
+    a known prefix and predicate, name a label, relationship or property of the schema as its
+    subject, and every declared vocabulary must be used by at least one mapping.
     """
-    try:
-        from rdflib import OWL, RDF, RDFS, Graph, Namespace, URIRef
-        from rdflib.collection import Collection
-    except ImportError:
-        return {"status": "NOT VERIFIED", "errors": ["rdflib is not installed"]}
-    graph = Graph()
-    try:
-        graph.parse(path, format="turtle")
-    except Exception as exc:
-        return {"status": "FAIL", "errors": [f"Turtle parse failed: {exc}"]}
-
     spec = load_spec(spec_path)
-    kg = Namespace("https://samyama.ai/kg/dbms-research/ontology#")
-    prov = Namespace("http://www.w3.org/ns/prov#")
-    skos = Namespace("http://www.w3.org/2004/02/skos/core#")
-    dcterms = Namespace("http://purl.org/dc/terms/")
-    foaf = Namespace("http://xmlns.com/foaf/0.1/")
-    schema = Namespace("https://schema.org/")
-    cito = Namespace("http://purl.org/spar/cito/")
     errors = []
-    namespaces = {prefix: str(uri) for prefix, uri in graph.namespaces()}
-    for name, mapping in spec["ontology_alignments"].items():
-        if mapping["namespace"] not in namespaces.values():
-            errors.append(f"namespace not declared in parsed RDF: {name}")
-    for label in spec["labels"]:
-        if (kg[label], RDF.type, OWL.Class) not in graph:
-            errors.append(f"missing OWL class: {label}")
-    for prop in spec.get("ontology_datatype_properties", []):
-        if (kg[prop], RDF.type, OWL.DatatypeProperty) not in graph:
-            errors.append(f"missing OWL datatype property: {prop}")
-
-    def members(node):
-        if isinstance(node, URIRef):
-            return {node}
-        head = graph.value(node, OWL.unionOf)
-        return set(Collection(graph, head)) if head is not None else set()
-
-    for rel, (sources, targets) in spec["relationships"].items():
-        prop = kg[rel]
-        if (prop, RDF.type, OWL.ObjectProperty) not in graph:
-            errors.append(f"missing OWL object property: {rel}")
-            continue
-        domain = graph.value(prop, RDFS.domain)
-        range_node = graph.value(prop, RDFS.range)
-        expected_domain = {kg[x] for x in sources.split("|")}
-        expected_range = {kg[x] for x in targets.split("|")}
-        if domain is None or members(domain) != expected_domain:
-            errors.append(f"wrong RDF domain for {rel}")
-        if range_node is None or members(range_node) != expected_range:
-            errors.append(f"wrong RDF range for {rel}")
-
-    namespaces_by_prefix = {
-        "kg": kg, "rdf": RDF, "rdfs": RDFS, "owl": OWL, "prov": prov,
-        "skos": skos, "dcterms": dcterms, "foaf": foaf, "schema": schema,
-        "cito": cito,
-    }
-
-    def expand(value):
-        prefix, local = value.split(":", 1)
-        if prefix not in namespaces_by_prefix:
-            raise ValueError(f"unknown ontology mapping prefix: {prefix}")
-        return namespaces_by_prefix[prefix][local]
-
+    by_namespace = {uri: prefix for prefix, uri in PREFIXES.items()}
+    used_prefixes = set()
+    for name, alignment in spec["ontology_alignments"].items():
+        if alignment.get("namespace") not in by_namespace:
+            errors.append(f"alignment {name} has an unknown namespace {alignment.get('namespace')!r}")
+    known_subjects = (set(spec["labels"]) | set(spec["relationships"])
+                      | set(spec.get("ontology_datatype_properties", []))
+                      | {"Topic", "Concept", "TaxonomyTerm"})
     for subject, predicate, obj in spec.get("ontology_mapping_triples", []):
-        try:
-            triple = (expand(subject), expand(predicate), expand(obj))
-        except (ValueError, KeyError) as exc:
-            errors.append(f"invalid ontology mapping inventory {subject} {predicate} {obj}: {exc}")
-            continue
-        if triple not in graph:
-            errors.append(f"missing vocabulary mapping triple: {subject} {predicate} {obj}")
-    for annotation in (kg["mapsTo"], kg["mapsToScheme"], kg["mapsToCiTO"]):
-        if (annotation, RDF.type, OWL.AnnotationProperty) not in graph:
-            errors.append(f"missing OWL annotation property: {annotation}")
-    for role, term in spec["cito_roles"].items():
-        if (kg[f"role-{role}"], kg["mapsToCiTO"], cito[term]) not in graph:
-            errors.append(f"missing CiTO role annotation: {role} -> {term}")
+        s_prefix, _, s_local = subject.partition(":")
+        o_prefix, _, o_local = obj.partition(":")
+        if s_prefix != "kg" or not (s_local in known_subjects or s_local.startswith("artifact-")):
+            errors.append(f"mapping subject is not a schema term: {subject}")
+        if predicate not in MAPPING_PREDICATES:
+            errors.append(f"mapping predicate not allowed: {predicate}")
+        if o_prefix not in PREFIXES or not o_local:
+            errors.append(f"mapping object has an unknown prefix: {obj}")
+        used_prefixes.add(o_prefix)
+    for name, alignment in spec["ontology_alignments"].items():
+        prefix = by_namespace.get(alignment.get("namespace"))
+        if prefix and prefix != "kg" and prefix not in used_prefixes:
+            errors.append(f"alignment {name} is declared but no mapping uses it")
+    for role, term in spec.get("cito_roles", {}).items():
+        if not re.fullmatch(r"[a-z][A-Za-z]+", str(term)):
+            errors.append(f"CiTO role {role} maps to an invalid term {term!r}")
     return {"status": "PASS" if not errors else "FAIL", "errors": errors,
-            "triple_count": len(graph)}
+            "mapping_count": len(spec.get("ontology_mapping_triples", []))}
 
 
-def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
+def _errors(data: dict, spec: dict) -> list[str]:
     errors: list[str] = []
     labels = set(spec["labels"])
     relations = spec["relationships"]
@@ -161,7 +126,8 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
                     errors.append(f"{prefix}: source crosses the pinned source boundary")
             if label == "TaxonomyTerm" and node.get("provenance") != "schema-vocabulary":
                 errors.append(f"{prefix}: taxonomy code node must be marked schema-vocabulary")
-            if label != "TaxonomyTerm" and (node.get("source") == "project_schema" or node.get("provenance") == "schema-vocabulary"):
+            if label != "TaxonomyTerm" and (node.get("source") == "project_schema"
+                                            or node.get("provenance") == "schema-vocabulary"):
                 errors.append(f"{prefix}: schema vocabulary provenance is only valid for TaxonomyTerm")
             if node.get("source_path"):
                 if "5fff7f74508a52ac238f3bb608b8c8c872489fec" not in node.get("source_url", ""):
@@ -268,7 +234,8 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
                     errors.append(f"{prefix}: CITES cito_property must be {expected_cito!r}")
             if rel == "STATE_OF_ART" and edge.get("kind") not in spec["codes"]["STATE_OF_ART.kind"]:
                 errors.append(f"{prefix}: invalid STATE_OF_ART.kind {edge.get('kind')!r}")
-            if rel == "CLASSIFIED_AS" and edge.get("evidence_status") not in spec["codes"]["CLASSIFIED_AS.evidence_status"]:
+            if (rel == "CLASSIFIED_AS"
+                    and edge.get("evidence_status") not in spec["codes"]["CLASSIFIED_AS.evidence_status"]):
                 errors.append(f"{prefix}: invalid evidence_status")
             if rel == "CLASSIFIED_AS":
                 term = target[1] if target else {}
@@ -280,7 +247,8 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
                     "solution-technique-family": set(spec["codes"]["Algorithm.family|System.family"]),
                     "computation-model-workload": set(spec["codes"]["ComputationModel.class"]),
                 }
-                if term.get("scheme") != expected_scheme and not (label == "Problem" and term.get("scheme") == "dbms-topic"):
+                topic_term = label == "Problem" and term.get("scheme") == "dbms-topic"
+                if term.get("scheme") != expected_scheme and not topic_term:
                     errors.append(f"{prefix}: taxonomy scheme {term.get('scheme')!r} mismatches {label}")
                 if term.get("scheme") in allowed and term.get("code") not in allowed[term["scheme"]]:
                     errors.append(f"{prefix}: taxonomy code is outside the scheme code list")
@@ -315,7 +283,8 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
                       for e in data.get("CLASSIFIED_AS", [])
                       if e.get("source_node_id") == node.get("id")}
             if not expected_schemes <= actual:
-                errors.append(f"{label}[{node.get('id')}]: missing taxonomy membership {sorted(expected_schemes - actual)}")
+                errors.append(f"{label}[{node.get('id')}]: missing taxonomy membership "
+                              f"{sorted(expected_schemes - actual)}")
             if label == "Problem":
                 expected_codes = {"problem-type": node.get("problem_type"),
                                   "dbms-topic": node.get("topic_id")}
@@ -413,19 +382,17 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
 
 
 def validate(data: dict, *, spec_path: Path = SPEC_PATH,
-             ontology_path: Path | None = None, raise_on_error: bool = True) -> list[str]:
+             raise_on_error: bool = True) -> list[str]:
     spec = load_spec(spec_path)
-    ontology_path = ontology_path or spec_path.parent / "dbms_research_kg.ttl"
-    errors = _errors(data, spec, ontology_path)
+    errors = _errors(data, spec)
     if errors and raise_on_error:
         raise ConformanceError("Schema conformance failed:\n- " + "\n- ".join(errors))
     return errors
 
-def validate_sqlite_alignments(path: Path, *, spec_path: Path = SPEC_PATH,
-                               ontology_path: Path | None = None) -> dict:
+def validate_sqlite_alignments(path: Path, *, spec_path: Path = SPEC_PATH) -> dict:
     """Seven-alignment audit of a SQLite graph; implemented in etl/alignments.py."""
     from etl.alignments import validate_sqlite_alignments as audit
-    return audit(path, spec_path=spec_path, ontology_path=ontology_path)
+    return audit(path, spec_path=spec_path)
 
 
 def summarize(data: dict) -> dict:

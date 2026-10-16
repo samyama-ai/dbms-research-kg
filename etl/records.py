@@ -26,9 +26,11 @@ def chunks(items, size):
 
 
 def cypher_map(record):
+    """A Cypher map literal. A missing value (None) is left out, so the property is absent and
+    reads as null; writing it as '' made 364 paper years an empty string on the engine."""
     return "{" + ", ".join(
         f"{key}: {cypher_literal(value)}"
-        for key, value in record.items()
+        for key, value in record.items() if value is not None
     ) + "}"
 
 

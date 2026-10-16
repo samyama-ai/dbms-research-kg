@@ -1,6 +1,6 @@
 // DBMS Research KG — indexes the engine loader creates before writing nodes and edges.
 // Run by etl/engine_load.py (python -m etl.loader --load). Schema: docs/schema.md,
-// schema/conformance.json, ontology: schema/dbms_research_kg.ttl.
+// schema/conformance.json (which also declares the ontology mappings).
 //
 // The engine accepts `CREATE INDEX ON :Label(prop)`, not uniqueness constraints; `id`
 // uniqueness is guaranteed by the builder (deterministic ids) and checked by etl.conformance.

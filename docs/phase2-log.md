@@ -4,7 +4,7 @@ Tracking issue: #3 (PR #4). Newest entry first.
 
 ## 2026-10-16 — AI review of PR #4 (review 19146)
 
-**Who:** Krithi, with Claude. All points addressed:
+**Who:** Krithi. All points addressed:
 
 | # | Point | Fix |
 |---|---|---|

@@ -265,7 +265,7 @@ candidate v2/v3 remain unchanged.
 
 ## 2026-10-16 — AI review of PR #8 addressed here; PR #8 closed
 
-**Who:** Krithi, with Claude. PR #8 (`feat/local-kg-builder`) added `etl/local_graph.py`,
+**Who:** Krithi. PR #8 (`feat/local-kg-builder`) added `etl/local_graph.py`,
 which imports `etl/citations.py` and the catalog `prepare()` that only exist on this
 branch, so #8 could not run on its own. #8 is closed; its review points (review 19154)
 are fixed on this branch:
@@ -279,7 +279,7 @@ are fixed on this branch:
 | `docs/phase2-log.md` points | fixed in PR #4 and merged here |
 ## 2026-10-16 — v5 candidate: coverage and code-list quality
 
-**Who:** Krithi, with Claude. Branch `feat/graph-quality`, stacked on
+**Who:** Krithi. Branch `feat/graph-quality`, stacked on
 `feat/ontology-conformance-pr`.
 
 v4 passed every structural check, but the checks did not look at content: FOAF
@@ -344,7 +344,7 @@ check against v5; loading v5 into a Samyama engine.
 
 ## 2026-10-16 (later) — v6 candidate and the 48-question check (issue #14)
 
-**Who:** Krithi, with Claude. Branch `feat/kg-48-questions`, stacked on the
+**Who:** Krithi. Branch `feat/kg-48-questions`, stacked on the
 standards audit PR.
 
 1. **Files over 500 lines split** (no output change; rebuilding onto v5 was
@@ -379,7 +379,7 @@ standards audit PR.
 
 ## 2026-10-16 (evening) — snapshot, GIF and two loader fixes
 
-**Who:** Krithi, with Claude, on `feat/kg-48-questions` (PR #15).
+**Who:** Krithi, on `feat/kg-48-questions` (PR #15).
 
 1. **Merged papers take the most complete citation.** The representative of a merged paper was
    the citation with the most identifiers, which could be one whose title or year did not parse:
@@ -409,3 +409,45 @@ standards audit PR.
    several names, or one name with several institutions, still links. AFFILIATED_WITH 469 → 429;
    v6 is **20,211 nodes, 53,721 edges**. Gates unchanged: quality 18/18, audit 22/22, questions
    0 wrong.
+
+## 2026-10-16 (night) — final version for main, repo layout as supplychain-logistics-kg
+
+**Who:** Krithi, on `final-to-main`: `feat/kg-standards` (the final v6 work of PRs #13 and #15)
+with `main` merged in, so main gets one complete version instead of PRs merged out of order.
+
+1. **Removed on review.** `schema/dbms_research_kg.ttl` is gone: the seven vocabulary mappings
+   are triples in `schema/conformance.json` (`ontology_mapping_triples`), and
+   `etl.conformance.validate_ontology` checks them (known terms, allowed predicates, known
+   prefixes, every declared vocabulary used). The audit's RDF item is now "RDF/RDFS (declared
+   mappings)"; the `rdf` extra and rdflib are no longer needed. `snapshots/` (the committed
+   `manifest.json`) is gone too and git-ignored: the `.sgsnap` and its manifest are shared
+   together, outside git.
+2. **Benchmarks.** The 48-question check moved into `benchmarks/`:
+   `scope_questions.cypher` (47 queries; Q39 needs vectors), `reference.py` (was
+   `etl/question_check.py`, the raw-page check), `run.py` (runs the Cypher and writes
+   `scope_questions.md`). `docs/question-report.md` is replaced by `benchmarks/scope_questions.md`.
+   On the loaded graph: 47 queries, 1 to 57 ms each; 17 correct, 8 consistent, 20 limited,
+   3 refused, 0 wrong. The runner expects exactly Q26, Q44 and Q46-Q48 to return no rows.
+3. **Two loader fixes.** A missing value was sent to the engine as `''`, so 364 paper years
+   were empty strings and sorting by year failed; `cypher_map` now leaves it out. `Topic.scope`
+   was empty on all 35 topics although `TAXONOMY.md` has a Scope column; the parser now reads
+   it. Nothing else in the graph changed: 20,211 nodes, 53,721 edges.
+4. **Layout of `supplychain-logistics-kg`.** Added `DATASET_CARD.md`, `docs/ontology.md`,
+   `docs/taxonomy.md`, `docs/data-provenance.md`, `docs/engine-notes.md`,
+   `docs/coding-standards.md`; `docs/schema.md` rewritten as design notes of the current graph;
+   `docs/standards.md` keeps the six standards groups (alignments moved to `ontology.md`,
+   taxonomies and code lists to `taxonomy.md`, each value with its count); README in the same
+   sections as the reference; `benchmarks/` and `demo/` are packages; `demo/dbms-research-kg.cast`
+   is committed beside the GIF (both re-recorded). `pyproject.toml` gains the build system, the
+   licence and ruff settings (line length 120); `ruff check .` passes.
+5. **Documents are tested.** `tests/test_docs_match_data.py` pins the label and edge lists in
+   the README, dataset card, design notes, ontology and index file to `schema/conformance.json`,
+   and their counts to the build; `tests/test_ontology_docs.py` does the same for every code
+   list and count in `taxonomy.md`. Writing them found two stale figures (the institution list
+   has 83 names, 82 of them in the graph; the demo said 84), now fixed.
+
+| | Before | After |
+|---|---:|---|
+| Nodes / edges | 20,211 / 53,721 | 20,211 / 53,721 |
+| Quality / audit / questions | 18 / 22 / 0 wrong | 18 / 22 / 0 wrong |
+| Tests | 184 | 212, and `ruff check .` clean |

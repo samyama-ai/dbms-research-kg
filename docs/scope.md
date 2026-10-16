@@ -20,7 +20,7 @@ Questions 1–45 carry one mark each: **28 [old], 10 [partly], 7 [new]**. Group 
 The marks compare with the **old** graph. Where our planned graph can answer a question only in part, the note says so (Q34, Q41).
 
 
-The answers on the catalog-built graph (v6), each checked against the raw pages, are in the [question report](question-report.md).
+The answers on the catalog-built graph (v6), each checked against the raw pages, are in the [benchmark](../benchmarks/scope_questions.md).
 
 ## A. Problems and topics
 

@@ -18,8 +18,6 @@ from etl.conformance import load_spec as load_conformance_spec
 from etl.conformance import validate as validate_conformance
 from etl.conformance import validate_ontology, validate_sqlite_alignments
 from etl.loader import PINNED_COMMIT, prepare
-
-EXPECTED_SNAPSHOT_SHA256 = "82119412c26c0b0b186b0edab36d28a1c6632ec8b47905723fa7b9985880b155"
 from etl.snapshot_graph import (
     DEFAULT_CATALOG,
     DEFAULT_CATALOG_OUTPUT,
@@ -33,6 +31,8 @@ from etl.snapshot_graph import (
     canonical_json,
     sha256,
 )
+
+EXPECTED_SNAPSHOT_SHA256 = "82119412c26c0b0b186b0edab36d28a1c6632ec8b47905723fa7b9985880b155"
 
 
 def _candidate_data(conn, spec):
@@ -87,9 +87,7 @@ def build_catalog_candidate(catalog_path: Path, output: Path) -> dict:
     spec = load_conformance_spec()
     catalog_hash = sha256(catalog_path)
     spec_path = Path(__file__).resolve().parents[1] / "schema" / "conformance.json"
-    ontology_path = spec_path.parent / "dbms_research_kg.ttl"
     schema_hash = sha256(spec_path)
-    ontology_hash = sha256(ontology_path)
     root = Path(__file__).resolve().parents[1]
     implementation_hashes = {
         name: sha256(root / name)
@@ -99,7 +97,7 @@ def build_catalog_candidate(catalog_path: Path, output: Path) -> dict:
     }
     implementation_hash = hashlib.sha256(canonical_json(implementation_hashes).encode()).hexdigest()
     signature = hashlib.sha256(
-        f"catalog-v1\n{catalog_hash}\n{schema_hash}\n{ontology_hash}\n{implementation_hash}".encode()).hexdigest()
+        f"catalog-v1\n{catalog_hash}\n{schema_hash}\n{implementation_hash}".encode()).hexdigest()
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     if catalog.get("source", {}).get("actual_commit") != PINNED_COMMIT:
         raise ValueError(f"Catalog must be pinned to {PINNED_COMMIT}")
@@ -139,7 +137,6 @@ def build_catalog_candidate(catalog_path: Path, output: Path) -> dict:
                 updates = {
                     "build_signature": signature,
                     "schema_sha256": schema_hash,
-                    "ontology_sha256": ontology_hash,
                     "implementation_sha256": implementation_hash,
                     "schema_labels": canonical_json(spec["labels"]),
                     "schema_relationships": canonical_json(sorted(spec["relationships"])),
@@ -174,7 +171,7 @@ def build_catalog_candidate(catalog_path: Path, output: Path) -> dict:
         conn.executemany("INSERT INTO graph_metadata(key,value) VALUES(?,?)", [
             ("graph_kind", "catalog-schema-v1"), ("build_signature", signature),
             ("catalog_sha256", catalog_hash), ("catalog_commit", PINNED_COMMIT),
-            ("schema_sha256", schema_hash), ("ontology_sha256", ontology_hash),
+            ("schema_sha256", schema_hash),
             ("implementation_sha256", implementation_hash),
             ("schema_labels", canonical_json(spec["labels"])),
             ("schema_relationships", canonical_json(sorted(spec["relationships"]))),
@@ -247,8 +244,12 @@ def inspect(path: Path, *, verify: bool = False) -> dict:
         nodes = conn.execute("SELECT count(*) FROM nodes").fetchone()[0]
         edges = conn.execute("SELECT count(*) FROM edges").fetchone()[0]
         sqlite_integrity = conn.execute("PRAGMA integrity_check").fetchone()[0]
-        duplicate_nodes = conn.execute("SELECT count(*) FROM (SELECT label,logical_id FROM nodes GROUP BY label,logical_id HAVING count(*)>1)").fetchone()[0]
-        duplicate_edges = conn.execute("SELECT count(*) FROM (SELECT rel_type,source_id,target_id FROM edges GROUP BY rel_type,source_id,target_id HAVING count(*)>1)").fetchone()[0]
+        duplicate_nodes = conn.execute(
+            "SELECT count(*) FROM (SELECT label,logical_id FROM nodes "
+            "GROUP BY label,logical_id HAVING count(*)>1)").fetchone()[0]
+        duplicate_edges = conn.execute(
+            "SELECT count(*) FROM (SELECT rel_type,source_id,target_id FROM edges "
+            "GROUP BY rel_type,source_id,target_id HAVING count(*)>1)").fetchone()[0]
         fk_errors = list(conn.execute("PRAGMA foreign_key_check"))
         endpoint_errors = []
         endpoint_contracts = {
@@ -257,7 +258,8 @@ def inspect(path: Path, *, verify: bool = False) -> dict:
             for rel, endpoints in spec["relationships"].items()
         } if candidate else ENDPOINTS
         for rel, source_label, target_label in conn.execute(
-            "SELECT e.rel_type,s.label,t.label FROM edges e JOIN nodes s ON s.node_id=e.source_id JOIN nodes t ON t.node_id=e.target_id"):
+            "SELECT e.rel_type,s.label,t.label FROM edges e "
+            "JOIN nodes s ON s.node_id=e.source_id JOIN nodes t ON t.node_id=e.target_id"):
             if (source_label, target_label) not in endpoint_contracts.get(rel, set()):
                 endpoint_errors.append((rel, source_label, target_label))
         missing_properties = {}
@@ -329,7 +331,7 @@ def inspect(path: Path, *, verify: bool = False) -> dict:
             if not candidate and (nodes < 20_000 or edges < 39_400):
                 raise ValueError(f"Persisted graph misses requested minimum: {nodes} nodes, {edges} edges")
             if candidate and ontology_validation["status"] == "FAIL":
-                raise ValueError("Turtle ontology semantic validation failed")
+                raise ValueError("ontology mapping validation failed")
         return {
             "path": str(path.resolve()), "storage": "SQLite property graph",
             "build_state": metadata.get("build_state"),
@@ -360,7 +362,9 @@ def inspect(path: Path, *, verify: bool = False) -> dict:
 def traverse(path: Path, problem_id: str, limit: int = 5) -> dict:
     conn = sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True)
     try:
-        problem = conn.execute("SELECT node_id,properties_json FROM nodes WHERE label='Problem' AND json_extract(properties_json,'$.id')=?", (problem_id,)).fetchone()
+        problem = conn.execute(
+            "SELECT node_id,properties_json FROM nodes "
+            "WHERE label='Problem' AND json_extract(properties_json,'$.id')=?", (problem_id,)).fetchone()
         if not problem:
             raise ValueError(f"Problem not found: {problem_id}")
         node_id, properties = problem

@@ -204,7 +204,8 @@ def _insert_snapshot_nodes(conn, nodes):
         values = (node_id, label, logical_id, canonical_json(props), "snapshot", "sha256:" + conn.execute(
             "SELECT value FROM graph_metadata WHERE key='snapshot_sha256'").fetchone()[0])
         conn.execute("INSERT OR IGNORE INTO nodes VALUES(?,?,?,?,?,?)", values)
-        existing = conn.execute("SELECT label,logical_id,properties_json FROM nodes WHERE node_id=?", (node_id,)).fetchone()
+        existing = conn.execute("SELECT label,logical_id,properties_json FROM nodes WHERE node_id=?",
+                                (node_id,)).fetchone()
         if existing != values[1:4]:
             raise RuntimeError(f"Existing node {node_id} conflicts with snapshot data")
 
@@ -233,7 +234,8 @@ def _insert_edge(conn, rel, source, target, props, origin, source_reference, edg
             f"{rel}\n{source}\n{target}".encode()).hexdigest()[:32]
     cursor = conn.execute("INSERT OR IGNORE INTO edges VALUES(?,?,?,?,?,?,?)",
                           (edge_id, rel, str(source), str(target), canonical_json(props), origin, source_reference))
-    row = conn.execute("SELECT properties_json,origin,source_reference FROM edges WHERE rel_type=? AND source_id=? AND target_id=?",
+    row = conn.execute("SELECT properties_json,origin,source_reference FROM edges "
+                       "WHERE rel_type=? AND source_id=? AND target_id=?",
                        (rel, str(source), str(target))).fetchone()
     if row is None:
         raise RuntimeError(f"Failed to persist {rel} edge {source}->{target}")
@@ -248,7 +250,8 @@ def _make_catalog_maps(data, snapshot_nodes):
         if label == "Problem":
             indexes[(label, "id", str(props.get("id", "")))].append(node_id)
         elif label == "Paper":
-            indexes[(label, "title_year", normalize_title(props.get("title", "")), str(props.get("year", "")))].append(node_id)
+            key = (label, "title_year", normalize_title(props.get("title", "")), str(props.get("year", "")))
+            indexes[key].append(node_id)
         elif label == "Person":
             indexes[(label, "person_key", person_key(props.get("name", "")))].append(node_id)
         elif label in {"Venue", "Concept", "Algorithm", "System", "ComputationModel"}:
@@ -258,7 +261,8 @@ def _make_catalog_maps(data, snapshot_nodes):
         values = indexes.get(key, [])
         return values[0] if len(values) == 1 else None
 
-    maps = {label: {} for label in ("Problem", "Paper", "Person", "Venue", "Concept", "Algorithm", "System", "ComputationModel")}
+    mapped = ("Problem", "Paper", "Person", "Venue", "Concept", "Algorithm", "System", "ComputationModel")
+    maps = {label: {} for label in mapped}
     for problem in data["Problem"]:
         node_id = unique(("Problem", "id", problem["id"]))
         if node_id is not None:

@@ -124,7 +124,8 @@ def evaluate(path: Path) -> list[dict]:
             return any(n not in state and visit(n) for n in list(children))
         add("Q6", "Concept hierarchy present, acyclic, every edge explained",
             bool(hierarchy) and not cyclic() and all(e.get("rationale") for e in hierarchy),
-            f"{len(hierarchy)} GENERALIZES edges over {len(concept_names)} concepts", ">= 1, acyclic, rationale on each")
+            f"{len(hierarchy)} GENERALIZES edges over {len(concept_names)} concepts",
+            ">= 1, acyclic, rationale on each")
         topics_used = {r["topic_id"] for r in _rows(conn, "nodes", "label", "Problem")}
         topics = {r["id"] for r in _rows(conn, "nodes", "label", "Topic")}
         add("Q7", "Every topic has problems (flat 35-topic taxonomy)", topics == topics_used and len(topics) == 35,
