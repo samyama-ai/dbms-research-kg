@@ -171,7 +171,7 @@ Not changed in v0.1: Person merging still relies on DBLP (Q28), shared future di
 | G Opportunities | 41–45 | Gap, ACTIVE_ON, FutureDirection, Paper.year. **Q41 only partly:** gap width isn't measurable from prose, so open problems can be listed by verdict but not ranked by width |
 | H Should not answer | 46–48 | nothing: the graph holds no global citation counts, post-2026-09 status or funding |
 
-## 8. Open decisions (for Naresh)
+## 8. Open decisions 
 
 1. **DBLP lookups.** The old graph resolved people against DBLP. Build v1 from the catalog
    only first, as in the AI KG, and add DBLP as a second step? Proposed: yes.
