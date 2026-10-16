@@ -9,10 +9,12 @@ dependencies = [
     "rich>=13.0",
     "click>=8.0",
     "fastmcp>=0.1.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "ruff>=0.1.0"]
+rdf = ["rdflib>=7.0"]
 
 [tool.setuptools.packages.find]
 include = ["etl*", "mcp_server*"]

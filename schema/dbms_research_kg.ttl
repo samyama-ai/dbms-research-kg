@@ -1,0 +1,89 @@
+@prefix kg: <https://samyama.ai/kg/dbms-research/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <https://schema.org/> .
+@prefix cito: <http://purl.org/spar/cito/> .
+
+<https://samyama.ai/kg/dbms-research/ontology> a owl:Ontology ;
+  owl:versionInfo "1.0.0" ;
+  dcterms:source <https://github.com/samyama-ai/dbms_research/tree/5fff7f74508a52ac238f3bb608b8c8c872489fec> ;
+  rdfs:label "DBMS Research Knowledge Graph ontology" .
+
+kg:Problem a owl:Class ; rdfs:label "Problem" ; rdfs:comment "One page-level DBMS research problem from the pinned catalog." .
+kg:Topic a owl:Class ; rdfs:subClassOf skos:Concept ; rdfs:label "Topic" .
+kg:Paper a owl:Class ; rdfs:label "Paper" ; rdfs:seeAlso schema:ScholarlyArticle .
+kg:Person a owl:Class ; rdfs:subClassOf foaf:Person ; rdfs:label "Person" ; rdfs:seeAlso schema:Person .
+kg:Venue a owl:Class ; rdfs:label "Venue" ; rdfs:seeAlso schema:Periodical, schema:EventSeries .
+kg:Institution a owl:Class ; rdfs:subClassOf foaf:Organization ; rdfs:label "Institution" ; rdfs:seeAlso schema:Organization .
+kg:Concept a owl:Class ; rdfs:subClassOf skos:Concept ; rdfs:label "Concept" .
+kg:Algorithm a owl:Class ; rdfs:label "Algorithm" .
+kg:System a owl:Class ; rdfs:label "System" .
+kg:Bound a owl:Class ; rdfs:label "Bound" .
+kg:ComputationModel a owl:Class ; rdfs:label "Computation model" .
+kg:Gap a owl:Class ; rdfs:label "Gap" .
+kg:ResearchDirection a owl:Class ; rdfs:label "Research direction" .
+kg:FutureDirection a owl:Class ; rdfs:label "Future direction" .
+kg:DataSource a owl:Class ; rdfs:label "Data source" .
+kg:TaxonomyTerm a owl:Class ; rdfs:subClassOf skos:Concept ; rdfs:label "Taxonomy term" .
+
+kg:IN_TOPIC a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Topic ; rdfs:subPropertyOf dcterms:subject .
+kg:CITES a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Paper ; rdfs:subPropertyOf cito:cites .
+kg:AUTHORED_BY a owl:ObjectProperty ; rdfs:domain kg:Paper ; rdfs:range kg:Person ; rdfs:subPropertyOf dcterms:creator .
+kg:APPEARED_AT a owl:ObjectProperty ; rdfs:domain kg:Paper ; rdfs:range kg:Venue ; rdfs:subPropertyOf dcterms:isPartOf .
+kg:RESTS_ON a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Concept .
+kg:GENERALIZES a owl:ObjectProperty ; rdfs:domain kg:Concept ; rdfs:range kg:Concept ; rdfs:subPropertyOf skos:broader .
+kg:HAS_BOUND a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Bound .
+kg:IN_MODEL a owl:ObjectProperty ; rdfs:domain kg:Bound ; rdfs:range kg:ComputationModel .
+kg:STATE_OF_ART a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range [ a owl:Class ; owl:unionOf (kg:Algorithm kg:System) ] .
+kg:HAS_GAP a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Gap .
+kg:HAS_RESEARCH a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:ResearchDirection .
+kg:CLOSING_REQUIRES a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:FutureDirection .
+kg:ACTIVE_ON a owl:ObjectProperty ; rdfs:domain [ a owl:Class ; owl:unionOf (kg:Person kg:Institution) ] ; rdfs:range kg:Problem .
+kg:AFFILIATED_WITH a owl:ObjectProperty ; rdfs:domain kg:Person ; rdfs:range kg:Institution .
+kg:RELATED_TO a owl:ObjectProperty, owl:SymmetricProperty ; rdfs:domain kg:Problem ; rdfs:range kg:Problem ; rdfs:subPropertyOf dcterms:relation .
+kg:FROM_SOURCE a owl:ObjectProperty ; rdfs:domain kg:Problem ; rdfs:range kg:DataSource ; rdfs:subPropertyOf prov:wasDerivedFrom .
+kg:CLASSIFIED_AS a owl:ObjectProperty ; rdfs:domain [ a owl:Class ; owl:unionOf (kg:Problem kg:Algorithm kg:System kg:ComputationModel) ] ; rdfs:range kg:TaxonomyTerm ; kg:mapsTo skos:related .
+
+kg:source a owl:DatatypeProperty ; rdfs:comment "Local source identifier; not itself a PROV entity." .
+kg:source_url a owl:DatatypeProperty ; kg:mapsTo prov:hadPrimarySource ; rdfs:comment "String locator mapped to prov:hadPrimarySource by an RDF exporter; not an OWL subproperty." .
+kg:method a owl:DatatypeProperty ; rdfs:comment "Extraction or computation activity; not asserted as prov:Activity without a reified activity node." .
+kg:retrieved_at a owl:DatatypeProperty ; kg:mapsTo prov:generatedAtTime ; rdfs:range xsd:date ; rdfs:comment "Retrieval timestamp field correspondence; not a claim that retrieval equals PROV generation time." .
+kg:source_date a owl:DatatypeProperty ; rdfs:range xsd:date .
+kg:id a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:comment "Stable local identifier; graph storage may also expose a physical node key." .
+kg:title a owl:DatatypeProperty ; rdfs:subPropertyOf dcterms:title, schema:name .
+kg:year a owl:DatatypeProperty ; rdfs:subPropertyOf dcterms:issued ; rdfs:range xsd:gYear .
+kg:name a owl:DatatypeProperty ; rdfs:subPropertyOf foaf:name, schema:name .
+kg:notation a owl:DatatypeProperty ; rdfs:subPropertyOf skos:notation .
+kg:number a owl:DatatypeProperty ; kg:mapsTo skos:notation ; rdfs:range xsd:integer .
+kg:role a owl:DatatypeProperty ; rdfs:comment "Controlled citation role mapped to a nearest CiTO object property; the mapping is not an asserted CiTO triple." .
+kg:mapsToCiTO a owl:AnnotationProperty .
+kg:mapsTo a owl:AnnotationProperty ; rdfs:comment "Non-entailing field correspondence used because the property graph does not serialize these fields as RDF triples." .
+kg:mapsToScheme a owl:AnnotationProperty .
+kg:dbmsTopicScheme a skos:ConceptScheme ; rdfs:label "DBMS topic scheme" .
+kg:conceptScheme a skos:ConceptScheme ; rdfs:label "DBMS concept scheme" .
+kg:taxonomyScheme a skos:ConceptScheme ; rdfs:label "Project taxonomy schemes" .
+kg:role-foundational kg:mapsToCiTO cito:obtainsBackgroundFrom .
+kg:role-sota kg:mapsToCiTO cito:citesAsAuthority .
+kg:role-survey kg:mapsToCiTO cito:citesAsRecommendedReading .
+kg:role-systems kg:mapsToCiTO cito:citesAsDataSource .
+kg:role-docs kg:mapsToCiTO cito:citesAsSourceDocument .
+kg:role-artifact kg:mapsToCiTO cito:cites .
+kg:artifact-software-service kg:mapsToCiTO cito:cites .
+kg:artifact-benchmark-workload kg:mapsToCiTO cito:citesAsDataSource .
+kg:role-attack kg:mapsToCiTO cito:critiques .
+
+# ISO 15836/Dublin Core term alignments are local property semantics, not claims
+# of RDF export from the property graph.
+kg:AUTHORED_BY rdfs:subPropertyOf dcterms:creator .
+kg:APPEARED_AT rdfs:subPropertyOf dcterms:isPartOf .
+kg:IN_TOPIC rdfs:subPropertyOf dcterms:subject .
+kg:FROM_SOURCE rdfs:subPropertyOf dcterms:source ; kg:mapsTo prov:wasDerivedFrom .
+kg:Topic kg:mapsToScheme kg:dbmsTopicScheme .
+kg:Concept kg:mapsToScheme kg:conceptScheme .
+kg:TaxonomyTerm kg:mapsToScheme kg:taxonomyScheme .
