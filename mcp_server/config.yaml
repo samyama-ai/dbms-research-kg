@@ -2,6 +2,7 @@ server:
   name: dbms-research-kg
   description: Query the DBMS Research knowledge graph
 graph:
-  host: 127.0.0.1
-  port: 8080
-  tenant: dbms_research
+  # The Samyama engine serves one graph ("default") per instance, so the URL picks the dataset.
+  url: http://127.0.0.1:8094
+  # Name written into exported .sgsnap files; matches the published 2026-09 snapshot.
+  snapshot_tenant: dbms-research

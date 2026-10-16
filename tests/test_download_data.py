@@ -13,6 +13,7 @@ from etl.download_data import (
     count_problem_pages,
     download,
     lock_path,
+    main,
 )
 
 GIT_ID = ["-c", "user.name=Test", "-c", "user.email=test@example.com"]
@@ -88,7 +89,7 @@ def test_clone_of_another_repo_is_refused(tmp_path, upstream):
     repo, sha = upstream
     root = tmp_path / "data" / "dbms_research"
     download(root, sha, str(repo))
-    with pytest.raises(CatalogError, match="not"):
+    with pytest.raises(CatalogError, match="is a clone of"):
         download(root, sha, "https://github.com/someone/else.git")
 
 
@@ -116,3 +117,58 @@ def test_count_skips_topic_readmes(tmp_path):
     (tmp_path / "topics" / "01-x" / "p.md").write_text("")
     (tmp_path / "topics" / "README.md").write_text("")  # not inside a topic folder: not counted either
     assert count_problem_pages(tmp_path) == 1
+
+
+def test_short_sha_is_resolved_to_the_full_commit(tmp_path, upstream):
+    repo, sha = upstream
+    root = tmp_path / "data" / "dbms_research"
+    lock = download(root, sha[:12], str(repo))
+    assert lock["commit"] == sha
+    assert check_catalog(root, sha[:8], str(repo)) == sha
+
+
+def test_option_like_commit_is_refused(tmp_path, upstream):
+    repo, sha = upstream
+    root = tmp_path / "data" / "dbms_research"
+    download(root, sha, str(repo))
+    with pytest.raises(CatalogError, match="is not a commit"):
+        download(root, "--output=/tmp/x", str(repo))
+
+
+def test_unknown_commit_gives_a_clear_error(tmp_path, upstream):
+    repo, _ = upstream
+    root = tmp_path / "data" / "dbms_research"
+    with pytest.raises(CatalogError, match="was not found"):
+        download(root, "0" * 40, str(repo))
+
+
+def test_lock_from_another_repo_is_not_reused(tmp_path, upstream):
+    repo, sha = upstream
+    root = tmp_path / "data" / "dbms_research"
+    download(root, sha, str(repo))
+    old = json.loads(lock_path(root).read_text())
+    old.update(repo="https://example.com/other.git", fetched_at="2000-01-01T00:00:00+00:00")
+    lock_path(root).write_text(json.dumps(old))
+    lock = download(root, sha, str(repo))
+    assert lock["repo"] == str(repo)
+    assert lock["fetched_at"] != "2000-01-01T00:00:00+00:00"
+
+
+def test_clone_without_origin_is_refused(tmp_path, upstream):
+    repo, sha = upstream
+    root = tmp_path / "data" / "dbms_research"
+    download(root, sha, str(repo))
+    run("remote", "remove", "origin", cwd=root)
+    with pytest.raises(CatalogError, match="no 'origin' remote"):
+        download(root, sha, str(repo))
+
+
+def test_main_exits_nonzero_with_a_readable_message(tmp_path, monkeypatch, capsys):
+    import etl.download_data as dd
+    folder = tmp_path / "data" / "dbms_research"
+    folder.mkdir(parents=True)                       # exists but is not a clone
+    monkeypatch.setattr(dd.download, "__defaults__", (folder, dd.PINNED_COMMIT, dd.REPO_URL))
+    with pytest.raises(SystemExit) as stop:
+        main([])
+    assert stop.value.code == 1
+    assert "[download] error:" in capsys.readouterr().err
