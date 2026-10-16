@@ -1,6 +1,23 @@
 # Phase 2 log — reproducible source setup
 
-Tracking issue: #3. Newest entry first.
+Tracking issue: #3 (PR #4). Newest entry first.
+
+## 2026-10-16 — AI review of PR #4 (review 19146)
+
+**Who:** Krithi, with Claude. All points addressed:
+
+| # | Point | Fix |
+|---|---|---|
+| 1 | `--commit` failed for a short SHA | the argument is resolved to the full SHA (`git rev-parse --verify <c>^{commit}`) before checkout and comparison; tests for a short SHA and an option-like value |
+| 2 | PR description claimed the lock file and dev dependencies were added | description corrected: the lock is git-ignored, only `name` and `description` changed in `pyproject.toml` |
+| 3 | stale "not pushed / no PR" statement | removed (see the status below) |
+| 4 | README linked missing files and kept template placeholders | README rewritten for Phase 2: no placeholders, no links to files that do not exist yet |
+| 5 | a lock from another repo was reused | the lock is reused only for the same commit **and** repo |
+| 6 | the fetch fallback caught every checkout failure and missed unadvertised commits | the commit is looked up locally, then after `git fetch origin`, then by `git fetch origin <commit>`; otherwise a clear `CatalogError` |
+| 7 | a missing `git` binary gave a traceback | `main` prints "git is not installed or not on PATH" and exits 1 |
+| — | tests | the wrong-repo test matches "is a clone of"; new tests for short SHA, option-like commit, unknown commit, lock from another repo, missing `origin`, and `main` exiting 1 with a readable message (15 tests) |
+| — | the "1,053 problems" comment next to `PINNED_COMMIT` would go stale | dropped |
+
 
 ## 2026-10-15 — Phase 2 implementation review
 
@@ -44,14 +61,13 @@ describe the local checkout and lock record; they are not committed with this lo
 
 ### Environment and test evidence
 
+*Point-in-time evidence from 2026-10-15; versions and timings will differ on another machine.*
 At review time, `.venv` exists with Python 3.12.3. From the activated `.venv`,
 `python -m pip install -e ".[dev]"` completed successfully: the editable package
 was built and installed, with pytest and Ruff already satisfied in the environment.
 The installed distribution is `dbms-research-kg` version 0.1.0; pytest 9.1.1 and
 Ruff 0.17.0 are available. `pyproject.toml` defines `.[dev]` as the project install
 extra.
-
-The final test run used `python -m pytest tests/ -v`; the result is recorded below.
 
 Coverage in the 9 tests consists of 8 downloader tests and 1 smoke test. The
 downloader tests cover writing a fresh lock, retaining the fetch timestamp on rerun,
@@ -74,11 +90,10 @@ Problem embeddings are included in v1; who reviews the Concept list and hierarch
 and whether catalog/snapshot discrepancies should be raised upstream. No decision
 about these items is recorded by this Phase 2 implementation.
 
-**Remaining work:** the Phase 2 branch has not been pushed, and no Phase 2 pull
-request was found as of this review. Issue #3 remains open for review. These are
-workflow steps, not claims that the implementation or source pin is invalid.
+**Status:** the branch is pushed as PR #4; issue #3 stays open until it merges.
 
-### Verification after this log change
+### Test result
 
-`python -m pytest tests/ -v`: **9 passed in 0.61 seconds** (8 downloader tests
-and 1 smoke test), run from the activated repository `.venv`.
+On 2026-10-15, `python -m pytest tests/ -v` gave **9 passed** (8 downloader tests and
+1 smoke test). After the review fixes of 2026-10-16: **15 passed** (14 downloader
+tests and 1 smoke test).

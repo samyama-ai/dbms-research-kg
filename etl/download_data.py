@@ -27,7 +27,7 @@ from pathlib import Path
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CATALOG_DIR = DATA_DIR / "dbms_research"
 REPO_URL = "https://github.com/samyama-ai/dbms_research.git"
-PINNED_COMMIT = "5fff7f74508a52ac238f3bb608b8c8c872489fec"  # 2026-09-09, 1,053 problems
+PINNED_COMMIT = "5fff7f74508a52ac238f3bb608b8c8c872489fec"  # committed 2026-09-09
 
 
 class CatalogError(RuntimeError):
@@ -69,18 +69,36 @@ def same_repo(a: str, b: str) -> bool:
     return norm(a) == norm(b)
 
 
+def origin_url(root: Path) -> str:
+    """The clone's origin URL; a clone without an origin remote is refused."""
+    try:
+        return git("remote", "get-url", "origin", cwd=root)
+    except subprocess.CalledProcessError as error:
+        raise CatalogError(f"{root} has no 'origin' remote; re-clone it with python -m etl.download_data") from error
+
+
+def resolve_commit(root: Path, commit: str) -> str | None:
+    """The full 40-hex SHA that `commit` (full or short SHA, tag) names in the clone, or None."""
+    if not commit or commit.startswith("-"):
+        raise CatalogError(f"{commit!r} is not a commit")   # never pass an option to git
+    result = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}"],
+                            check=False, cwd=root, capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 def check_catalog(root: Path = CATALOG_DIR, commit: str = PINNED_COMMIT,
                   repo_url: str = REPO_URL) -> str:
-    """Raise CatalogError unless `root` is a clean clone of `repo_url` at `commit`. Return the commit."""
+    """Raise CatalogError unless `root` is a clean clone of `repo_url` at `commit`. Return the full SHA."""
     if not (root / ".git").exists():
         raise CatalogError(f"{root} is not a git clone; run: python -m etl.download_data")
-    remote = git("remote", "get-url", "origin", cwd=root)
+    remote = origin_url(root)
     if not same_repo(remote, repo_url):
         raise CatalogError(f"{root} is a clone of {remote}, not {repo_url}")
     if git("status", "--porcelain", cwd=root):
         raise CatalogError(f"{root} has local changes; a build from it would not be reproducible")
     head = git("rev-parse", "HEAD", cwd=root)
-    if head != commit:
+    wanted = resolve_commit(root, commit)
+    if head != wanted:
         raise CatalogError(f"{root} is at {head[:8]}, not the pinned {commit[:8]}; "
                            "run: python -m etl.download_data")
     return head
@@ -98,23 +116,30 @@ def download(root: Path = CATALOG_DIR, commit: str = PINNED_COMMIT,
         git("clone", "--quiet", repo_url, str(root))
 
     # 2. Refuse to touch a clone of another repo or one with local edits, before checking anything out.
-    remote = git("remote", "get-url", "origin", cwd=root)
+    remote = origin_url(root)
     if not same_repo(remote, repo_url):
         raise CatalogError(f"{root} is a clone of {remote}, not {repo_url}")
     if git("status", "--porcelain", cwd=root):
         raise CatalogError(f"{root} has local changes; commit or discard them first")
 
-    # 3. Move to the pinned commit. Fetch only when the clone doesn't have it yet.
-    try:
-        git("checkout", "--quiet", "--detach", commit, cwd=root)
-    except subprocess.CalledProcessError:
+    # 3. Find the commit: locally, then after fetching branches and tags, then by
+    #    fetching the commit itself (it may be unreachable from any advertised ref).
+    sha = resolve_commit(root, commit)
+    if sha is None:
         git("fetch", "--quiet", "origin", cwd=root)
-        git("checkout", "--quiet", "--detach", commit, cwd=root)
-    head = check_catalog(root, commit, repo_url)
+        sha = resolve_commit(root, commit)
+    if sha is None:
+        subprocess.run(["git", "fetch", "--quiet", "origin", commit], check=False, cwd=root, capture_output=True, text=True)
+        sha = resolve_commit(root, commit)
+    if sha is None:
+        raise CatalogError(f"commit {commit!r} was not found in {repo_url}")
+    git("checkout", "--quiet", "--detach", sha, cwd=root)
+    head = check_catalog(root, sha, repo_url)
 
-    # 4. Record the fetch. Keep an existing lock for the same commit, so fetched_at stays the real date.
+    # 4. Record the fetch. Keep an existing lock for the same commit and repo, so
+    #    fetched_at stays the real date.
     lock = read_lock(root)
-    if not lock or lock.get("commit") != head:
+    if not lock or lock.get("commit") != head or not same_repo(lock.get("repo", ""), repo_url):
         lock = {
             "repo": repo_url,
             "commit": head,
@@ -134,6 +159,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         lock = download(commit=args.commit)
+    except FileNotFoundError:
+        parser.exit(1, "[download] error: git is not installed or not on PATH\n")
     except (CatalogError, subprocess.CalledProcessError) as error:
         detail = getattr(error, "stderr", "") or ""
         parser.exit(1, f"[download] error: {error} {detail}".rstrip() + "\n")
