@@ -1,5 +1,11 @@
 # Historical schema conformance inventory (pre-clone)
 
+> **Superseded.** This inventory describes candidate v2 (2026-10-15) and its counts are
+> out of date. The current checks are generated from the built graph:
+> [quality report](quality-report.md) (18 criteria), [audit report](audit-report.md)
+> (4 taxonomies, 12 code lists, 6 standards) and [question report](question-report.md)
+> (48 questions). Kept for the record of how the schema decisions were made.
+
 This is a first-pass mapping against the checked-in `docs/schema.md` (v0.1 plan),
 `docs/scope.md`, the current loader, and tests. It records gaps rather than
 guessing meanings for requirements that the source schema does not define.
