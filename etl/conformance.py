@@ -321,7 +321,8 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
                 expected_codes = {"problem-type": node.get("problem_type"),
                                   "dbms-topic": node.get("topic_id")}
                 expected_evidence = {
-                    "problem-type": (node.get("title", "") + "\n" + node.get("problem_statement", "")).strip(),
+                    "problem-type": (node.get("topic_id") if node.get("problem_type_method") == "topic-crosswalk"
+                                     else (node.get("title", "") + "\n" + node.get("problem_statement", "")).strip()),
                     "dbms-topic": node.get("topic_id"),
                 }
                 expected_status = {"problem-type": node.get("classification_evidence_status"),
@@ -332,7 +333,7 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
                 code_field = "family" if label in {"Algorithm", "System"} else "class"
                 code = node.get(code_field)
                 expected_codes = {scheme: code}
-                expected_evidence = {scheme: node.get("name")}
+                expected_evidence = {scheme: node.get("family_evidence") or node.get("name")}
                 expected_status = {scheme: "unresolved" if code == "unclassified" else "rule-based"}
             for edge in data.get("CLASSIFIED_AS", []):
                 if edge.get("source_node_id") != node.get("id"):
@@ -377,7 +378,8 @@ def _errors(data: dict, spec: dict, ontology_path: Path) -> list[str]:
     for item, problem_ids in evidence_to_problems.items():
         for left, right in itertools.combinations(sorted(problem_ids), 2):
             expected_related.setdefault((left, right), set()).add(item)
-    expected_related = {pair: shared for pair, shared in expected_related.items() if len(shared) >= 2}
+    expected_related = {pair: shared for pair, shared in expected_related.items()
+                        if len(shared) >= 2 and any(kind == "paper" for kind, _ in shared)}
     actual_related = {}
     problem_records = {node.get("id"): node for node in data.get("Problem", [])}
     for edge in data.get("RELATED_TO", []):

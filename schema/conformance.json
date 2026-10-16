@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "source_commit": "5fff7f74508a52ac238f3bb608b8c8c872489fec",
   "labels": ["Problem", "Topic", "Paper", "Person", "Venue", "Institution", "Concept", "Algorithm", "System", "Bound", "ComputationModel", "Gap", "ResearchDirection", "FutureDirection", "DataSource", "TaxonomyTerm"],
   "relationships": {
@@ -22,15 +22,15 @@
     "CLASSIFIED_AS": ["Problem|Algorithm|System|ComputationModel", "TaxonomyTerm"]
   },
   "node_properties": {
-    "Problem": {"required": ["id", "title", "slug", "status", "statement", "worked_example"], "optional": ["first_added", "last_reviewed", "last_substantive_update", "stale_since", "refs_checked", "refs_unverified", "catalog_provenance", "problem_type", "classification_evidence_status", "topic_id", "source_path", "problem_statement", "mathematical_foundations", "state_of_the_art", "upper_bound_text", "lower_bound_text", "gap_text", "current_research", "future_work_text", "key_references"]},
+    "Problem": {"required": ["id", "title", "slug", "status", "statement", "worked_example"], "optional": ["first_added", "last_reviewed", "last_substantive_update", "stale_since", "refs_checked", "refs_unverified", "catalog_provenance", "problem_type", "classification_evidence_status", "topic_id", "source_path", "problem_statement", "mathematical_foundations", "state_of_the_art", "upper_bound_text", "lower_bound_text", "gap_text", "current_research", "future_work_text", "key_references", "problem_type_method"]},
     "Topic": {"required": ["id", "number", "name", "slug"], "optional": ["scope", "source_path"]},
     "Paper": {"required": ["id", "citation_text", "parse_status"], "optional": ["title", "year", "doi", "arxiv_id", "dblp_key", "url", "venue_raw", "authors_raw", "authors", "source_verified", "source_path", "page_count"]},
     "Person": {"required": ["id", "name", "name_form"], "optional": ["dblp_pid", "orcid", "aliases", "source_path", "page_count"]},
     "Venue": {"required": ["id", "name", "kind"], "optional": ["source_path", "page_count"]},
-    "Institution": {"required": ["id", "name", "kind"], "optional": ["source_path", "page_count"]},
+    "Institution": {"required": ["id", "name", "kind"], "optional": ["source_path", "page_count", "extraction"]},
     "Concept": {"required": ["id", "name"], "optional": ["aliases", "source_path", "page_count", "extraction"]},
-    "Algorithm": {"required": ["id", "name", "family"], "optional": ["source_path", "page_count", "extraction"]},
-    "System": {"required": ["id", "name", "kind", "family"], "optional": ["source_path", "page_count", "extraction"]},
+    "Algorithm": {"required": ["id", "name", "family"], "optional": ["source_path", "page_count", "extraction", "family_method", "family_evidence"]},
+    "System": {"required": ["id", "name", "kind", "family"], "optional": ["source_path", "page_count", "extraction", "family_method", "family_evidence"]},
     "Bound": {"required": ["id", "problem_id", "direction", "kind", "text"], "optional": ["source_path"]},
     "ComputationModel": {"required": ["id", "name", "class"], "optional": ["source_path", "page_count", "extraction"]},
     "Gap": {"required": ["id", "problem_id", "text", "verdict", "verdict_raw", "verdict_method"], "optional": ["source_path"]},
@@ -45,7 +45,7 @@
     "AUTHORED_BY": {"required": ["position"], "optional": []},
     "APPEARED_AT": {"required": [], "optional": []},
     "RESTS_ON": {"required": [], "optional": []},
-    "GENERALIZES": {"required": [], "optional": []},
+    "GENERALIZES": {"required": ["method", "rationale"], "optional": []},
     "HAS_BOUND": {"required": ["direction"], "optional": []},
     "IN_MODEL": {"required": [], "optional": []},
     "STATE_OF_ART": {"required": ["kind"], "optional": []},
@@ -53,7 +53,7 @@
     "HAS_RESEARCH": {"required": ["position"], "optional": []},
     "CLOSING_REQUIRES": {"required": ["position"], "optional": []},
     "ACTIVE_ON": {"required": ["direction"], "optional": []},
-    "AFFILIATED_WITH": {"required": [], "optional": []},
+    "AFFILIATED_WITH": {"required": ["evidence"], "optional": []},
     "RELATED_TO": {"required": ["method", "score", "shared_evidence_count"], "optional": ["shared_papers", "shared_concepts", "source_commit", "source_urls"]},
     "FROM_SOURCE": {"required": [], "optional": []},
     "CLASSIFIED_AS": {"required": ["evidence_status", "evidence"], "optional": []}
@@ -63,20 +63,23 @@
     "Paper.parse_status": ["parsed", "uncertain"],
     "CITES.verification_status": ["source_only", "unverified"],
     "CITES.role_status": ["source-explicit", "unresolved"],
-    "Gap.verdict_method": ["stated", "keyword", "none"]
+    "Gap.verdict_method": ["stated", "keyword", "none"],
+    "Problem.problem_type_method": ["statement-rule", "topic-crosswalk", "none"],
+    "Algorithm.family_method": ["name-rule", "topic-crosswalk", "none"],
+    "System.family_method": ["name-rule", "topic-crosswalk", "none"]
   },
   "codes": {
     "Problem.status": ["open", "partially-solved", "empirically-open", "solved-but-impractical", "stale"],
     "CITES.role": ["foundational", "sota", "survey", "systems", "docs", "artifact", "attack", "mixed", "unclassified"],
     "Gap.verdict": ["open", "partially-solved", "empirically-open", "closed", "unstated"],
-    "Bound.kind": ["time", "space", "impossibility", "unclassified"],
+    "Bound.kind": ["time", "space", "impossibility", "approximation", "unclassified"],
     "STATE_OF_ART.kind": ["theory", "systems"],
     "Person.name_form": ["full", "initials", "surname"],
-    "Venue.kind": ["conference", "journal", "preprint", "other"],
+    "Venue.kind": ["conference", "journal", "preprint", "book", "report", "other"],
     "Institution.kind": ["academic", "industry", "government", "non-profit"],
     "Problem.problem_type": ["query-evaluation", "query-optimization", "data-modeling", "data-integration", "transaction-processing", "storage-indexing", "distributed-data", "analytics", "system-design", "other", "unclassified"],
     "Algorithm.family|System.family": ["join-processing", "query-optimization", "decomposition", "indexing", "transaction-processing", "distributed-processing", "analytics", "storage", "relational-dbms", "analytical-dbms", "streaming-system", "query-engine", "other", "unclassified"],
-    "ComputationModel.class": ["word-ram", "cell-probe", "external-memory", "comparison", "streaming", "parallel", "turing", "other", "unclassified"],
+    "ComputationModel.class": ["word-ram", "cell-probe", "external-memory", "comparison", "streaming", "parallel", "turing", "fine-grained", "complexity-class", "information-theoretic", "distributed-impossibility", "online", "communication", "cryptographic", "statistical", "other", "unclassified"],
     "CLASSIFIED_AS.evidence_status": ["source-explicit", "rule-based", "unresolved"]
   },
   "taxonomy_schemes": {

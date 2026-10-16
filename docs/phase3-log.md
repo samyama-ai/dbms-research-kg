@@ -262,3 +262,68 @@ Verification command:
 The 48-question tests pass as part of the full suite, but this phase did not
 reassess their answer correctness independently. The original graph and
 candidate v2/v3 remain unchanged.
+
+## 2026-10-16 — v5 candidate: coverage and code-list quality
+
+**Who:** Krithi, with Claude. Branch `feat/graph-quality`, stacked on
+`feat/ontology-conformance-pr`.
+
+v4 passed every structural check, but the checks did not look at content: FOAF
+passed with zero institutions and SKOS with zero concept hierarchy, and
+several code lists were mostly "unclassified". v5 fixes the content and adds a
+content gate, `python -m etl.quality`, with 18 criteria. Every new record comes
+from the pinned catalog text or from a reviewable project list; nothing was
+added to reach a number.
+
+| | v4 | v5 |
+|---|---:|---:|
+| Nodes | 19,655 | 21,381 |
+| Edges | 41,761 | 55,314 |
+| Populated labels / relationship types | 15 / 15 of 16 / 17 | 16 / 17 of 16 / 17 |
+| Algorithm / System | 3 / 17 | 585 / 982 |
+| Concept / GENERALIZES | 10 / 0 | 90 / 31 |
+| Institution / AFFILIATED_WITH | 0 / 0 | 82 / 469 |
+| ComputationModel | 7 | 16 |
+| `Bound.kind` unclassified | 84% | 0.5% |
+| `Problem.problem_type` unclassified | 46% | 0% |
+| `Venue.kind` other | 72% | 20.6% |
+| Tests | 105 | 147 |
+
+What changed:
+
+1. **Named algorithms and systems** (`etl/sota_entities.py`): every bold name in
+   §3, labelled by its bullet (`Theory-SOTA` → Algorithm, `Systems-SOTA` →
+   System, majority over pages). Rejected: section labels, verdict words,
+   citations ("Fagin (1983)"), author lists ("Chandra–Merlin"), cited authors'
+   surnames, complexity classes ("NEXPTIME-complete"), possessives, maths, and
+   ordinary words that the catalog itself writes in lower case ("Adaptive").
+2. **Institutions and affiliations** (`etl/research_links.py`): a checked list
+   of 84 institutions matched in §7 gives `Institution→Problem` `ACTIVE_ON`;
+   "Surname (Institution)" and "Institution (Surnames)" give `AFFILIATED_WITH`
+   when exactly one cited author on the page has the surname.
+3. **Concepts:** 90 concepts matched in §2 (acronyms case-sensitive), and 31
+   `GENERALIZES` pairs with a rationale each (e.g. submodular width →
+   fractional hypertree width → hypertree width → treewidth).
+4. **Computation models:** conditional hardness (SETH), complexity classes,
+   CAP/FLP, competitive analysis and others, with eight new class codes.
+5. **Code lists** (`etl/classify.py`): new rules for `Bound.kind` (+
+   `approximation`), `Gap.verdict` (bold-aware; mixed texts are
+   `partially-solved`), problem type and technique family (with documented
+   topic crosswalks as the fallback), and `Venue.kind` (+ `book`, `report`).
+6. **RELATED_TO** now needs a shared cited paper besides the second shared item;
+   concepts alone ("sampling", "entropy") no longer relate two problems.
+   Builder and checker compute the same rule.
+7. The build signature now also covers the four new modules, so editing a list
+   forces a rebuild.
+
+Commands:
+
+```bash
+python -m etl.local_graph build-catalog-candidate --catalog build/source_catalog.json \
+    --output build/dbms_research_kg.schema-candidate-v5.sqlite
+python -m etl.local_graph verify --graph build/dbms_research_kg.schema-candidate-v5.sqlite
+python -m etl.quality --graph build/dbms_research_kg.schema-candidate-v5.sqlite --report docs/quality-report.md
+```
+
+Still open: human review of the project lists and crosswalks; the 48-question
+check against v5; loading v5 into a Samyama engine.

@@ -180,6 +180,23 @@ def test_existing_catalog_candidate_reports_each_alignment_separately():
     assert result["endpoint_errors"] == 0
     assert result["alignments"]["project_dbms_domain_ontology"]["status"] == "PARTIAL"
     assert result["alignments"]["PROV-O"]["status"] == "PASS"
-    assert result["alignments"]["SKOS"]["status"] == "PASS"
+    # Schema 1.1.0 added code values (Bound.kind approximation, eight ComputationModel
+    # classes, Venue.kind book/report) whose taxonomy terms v2 predates.
+    assert result["alignments"]["SKOS"]["status"] == "PARTIAL"
     assert result["alignments"]["CiTO"]["status"] == "PARTIAL"
     assert result["alignments"]["CiTO"]["evidence"]["edges_with_invalid_cito_mapping"] == 6159
+
+
+def test_v5_candidate_passes_every_alignment_and_populates_every_type():
+    from pathlib import Path
+
+    graph = Path(__file__).resolve().parents[1] / "build" / "dbms_research_kg.schema-candidate-v5.sqlite"
+    if not graph.is_file():
+        pytest.skip("repository v5 catalog candidate is not present")
+    result = validate_sqlite_alignments(graph)
+    assert {name: a["status"] for name, a in result["alignments"].items()} == {
+        name: "PASS" for name in result["alignments"]}
+    spec = load_spec()
+    assert set(result["node_counts"]) == set(spec["labels"])
+    assert set(result["edge_counts"]) == set(spec["relationships"])
+    assert result["required_property_errors"] == 0

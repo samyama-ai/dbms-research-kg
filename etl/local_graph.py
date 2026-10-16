@@ -478,7 +478,9 @@ def build_catalog_candidate(catalog_path: Path, output: Path) -> dict:
     root = Path(__file__).resolve().parents[1]
     implementation_hashes = {
         name: sha256(root / name)
-        for name in ("etl/loader.py", "etl/citations.py", "etl/conformance.py", "etl/local_graph.py")
+        for name in ("etl/loader.py", "etl/citations.py", "etl/conformance.py", "etl/local_graph.py",
+                     "etl/classify.py", "etl/research_links.py", "etl/sota_entities.py",
+                     "etl/source_entities.py")
     }
     implementation_hash = hashlib.sha256(canonical_json(implementation_hashes).encode()).hexdigest()
     signature = hashlib.sha256(

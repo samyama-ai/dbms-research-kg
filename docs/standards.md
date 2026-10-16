@@ -51,16 +51,33 @@ the other three are project classification schemes and each assignment records
    `data-modeling`, `data-integration`, `transaction-processing`,
    `storage-indexing`, `distributed-data`, `analytics`, `system-design`,
    `other`, `unclassified`. First matching explicit keyword rule over title and
-   §1 is primary; no match is `unclassified` and evidence status `unresolved`.
+   §1 is primary (`problem_type_method=statement-rule`, evidence = title and §1).
+   When no rule fires, the page's own topic decides through the documented
+   `TOPIC_PROBLEM_TYPE` crosswalk in `etl/source_entities.py`
+   (`problem_type_method=topic-crosswalk`, evidence = the topic id). Both are
+   `rule-based`; `unclassified` remains only if neither applies.
 3. **Solution/technique family:** flat codes `join-processing`,
    `query-optimization`, `decomposition`, `indexing`,
    `transaction-processing`, `distributed-processing`, `analytics`, `storage`,
    `relational-dbms`, `analytical-dbms`, `streaming-system`, `query-engine`,
-   `other`, `unclassified`. Match only allow-listed algorithm/system names and
-   explicit name rules; otherwise unresolved.
+   `other`, `unclassified`. A name rule over the algorithm/system name decides
+   first (`family_method=name-rule`). Otherwise the majority topic of the pages
+   that cite the name as state of the art decides through the
+   `TOPIC_TECHNIQUE_FAMILY` crosswalk (`family_method=topic-crosswalk`, evidence
+   `topic NN`). Both are `rule-based`.
 4. **Computational-model/workload:** flat codes `word-ram`, `cell-probe`,
-   `external-memory`, `comparison`, `streaming`, `parallel`, `turing`, `other`,
-   `unclassified`. A model requires a matching explicit phrase in §4/§5.
+   `external-memory`, `comparison`, `streaming`, `parallel`, `turing`,
+   `fine-grained` (SETH, 3SUM, APSP, OMv), `complexity-class` (NP, coNP, PSPACE,
+   W[1], undecidability), `information-theoretic`, `distributed-impossibility`
+   (CAP, FLP, PACELC), `online` (competitive analysis), `communication`,
+   `cryptographic`, `statistical`, `other`, `unclassified`. A model requires a
+   matching explicit phrase in §4/§5 (`MODELS` in `etl/source_entities.py`).
+
+The **concept scheme** is the fifth, project-owned vocabulary: 90 concepts
+matched in §2 (`CONCEPTS`), with 31 reviewed `GENERALIZES` (skos:broader)
+pairs in `CONCEPT_HIERARCHY`. Each pair carries `method=curated-hierarchy` and a
+one-sentence `rationale` citing the textbook relation; a pair is emitted only
+when both concepts occur in the graph.
 
 **Unresolved design choice:** no source taxonomy specifies problem-type or
 family codes. The above is the v1 project-owned rule vocabulary. A reviewer must
@@ -80,11 +97,18 @@ Exact values are in `schema/conformance.json` and are enforced by
    and non-role tags such as `[Lower Bound]`. Original text remains in `role_raw`.
 3. `Gap.verdict`: `open`, `partially-solved`, `empirically-open`, `closed`,
    `unstated`; extraction method is separately `stated`, `keyword`, or `none`.
-4. `Bound.kind`: `time`, `space`, `impossibility`, `unclassified` (added to
-   preserve evidence when prose does not justify one of the three substantive kinds).
+   The page's own bold verdict wins (`stated`). Keyword rules ignore bold
+   markers; a closed phrase together with an open, partial or empirical phrase
+   gives `partially-solved`, because only part of the gap is closed.
+4. `Bound.kind`: `time`, `space`, `impossibility`, `approximation`,
+   `unclassified`. Rules in `etl/classify.py`: a lower bound with hardness or
+   impossibility wording is `impossibility`; otherwise complexity notation or
+   time words give `time`, space words `space` (the more frequent wins when both
+   occur); approximation-ratio or error guarantees give `approximation`.
 5. `STATE_OF_ART.kind`: `theory`, `systems`.
 6. `Person.name_form`: `full`, `initials`, `surname`.
-7. `Venue.kind`: `conference`, `journal`, `preprint`, `other`.
+7. `Venue.kind`: `conference`, `journal`, `preprint`, `book`, `report`, `other`
+   (`report` covers technical reports, theses and vendor documentation).
 8. `Institution.kind`: `academic`, `industry`, `government`, `non-profit`.
 9. `Problem.problem_type`: the problem-type taxonomy codes above.
 10. `Algorithm.family`/`System.family`: the solution/technique-family codes above.
@@ -123,19 +147,26 @@ Exact values are in `schema/conformance.json` and are enforced by
 - Node IDs must be globally unique; relationship pairs are unique per type;
   each edge must use the exact endpoint labels in `schema/conformance.json`.
   `Problem` has exactly one `IN_TOPIC`; edge endpoints must exist.
-- No institution, person identity resolution, funding, post-snapshot status,
-  global citation count, or external bibliography record may be inferred.
+- Institutions come only from the checked list `INSTITUTIONS` in
+  `etl/source_entities.py`, matched in §7; an `Institution→Problem` `ACTIVE_ON`
+  edge cites the problem page and keeps the §7 item as `direction`.
+- `AFFILIATED_WITH` comes only from §7 bracket patterns ("Suciu (UW)",
+  "TUM (Neumann, Leis)") and only when exactly one author cited on the same page
+  has that surname; the edge keeps the matched text as `evidence`. It records
+  what the page states, not a verified current affiliation.
+- No person identity resolution, funding, post-snapshot status, global citation
+  count, or external bibliography record may be inferred.
 
 ## Acceptance evidence and current limits
 
-Mention in this document is not implementation evidence. The catalog-only
-candidate has executable schema/data checks and a read-only seven-alignment
-audit. As of 2026-10-16, the v4 candidate passes the project ontology, PROV-O,
-SKOS, Dublin Core Terms, FOAF, Schema.org, and CiTO checks. CiTO validation
-checks the persisted mapping on each citation edge and validates the two
-source-specific artifact mappings. The legacy snapshot graph remains
-nonconformant to the v1 domain schema and has incomplete provenance and citation
-roles. Institution/affiliation and concept hierarchy evidence is absent from the
-pinned catalog. Some project taxonomy meanings still need human review. The
-48-question acceptance suite is deferred; none of these results establishes
-question-answer conformance or full OWL reasoning.
+As of 2026-10-16 the v5 candidate
+(`build/dbms_research_kg.schema-candidate-v5.sqlite`, 21,381 nodes, 55,314
+edges) passes the structural checks, all seven alignments, and the 18 content
+criteria of `python -m etl.quality`; the generated
+[quality report](quality-report.md) lists each measurement. Every one of the 16
+labels and 17 relationship types is populated. Three labels stay below the
+2026-09 graph by design (Paper, Institution, Algorithm), each explained in the
+report. The project-owned taxonomies, crosswalks, institution list and concept
+hierarchy still need human review before a production load; their assignments
+are `rule-based`, never "verified". The 48-question acceptance check is the
+next step.
