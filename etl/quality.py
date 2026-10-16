@@ -37,6 +37,9 @@ JUSTIFIED_SHORTFALL = {
                    "1,407 included surnames (\"Pavlo\"), systems (\"Bao\") and topics",
     "Algorithm": "only names written in bold in §3; the old graph's 2,808 were mostly citations "
                  "such as \"Yannakakis (1981)\"",
+    "Person": "one author list per paper (the most complete clean list among its citations): of the "
+              "853 names v5 had and v6 drops, 831 are other spellings of a surname still present and "
+              "most of the rest are parse fragments such as \"R.E\"",
 }
 
 # (property, values that count as "not classified", maximum share)

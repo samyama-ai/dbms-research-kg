@@ -1,7 +1,12 @@
 import pytest
 
-from etl.conformance import (ConformanceError, load_spec, validate,
-                             validate_ontology, validate_sqlite_alignments)
+from etl.conformance import (
+    ConformanceError,
+    load_spec,
+    validate,
+    validate_ontology,
+    validate_sqlite_alignments,
+)
 from etl.loader import prepare
 
 
@@ -187,12 +192,12 @@ def test_existing_catalog_candidate_reports_each_alignment_separately():
     assert result["alignments"]["CiTO"]["evidence"]["edges_with_invalid_cito_mapping"] == 6159
 
 
-def test_v5_candidate_passes_every_alignment_and_populates_every_type():
+def test_v6_candidate_passes_every_alignment_and_populates_every_type():
     from pathlib import Path
 
-    graph = Path(__file__).resolve().parents[1] / "build" / "dbms_research_kg.schema-candidate-v5.sqlite"
+    graph = Path(__file__).resolve().parents[1] / "build" / "dbms_research_kg.schema-candidate-v6.sqlite"
     if not graph.is_file():
-        pytest.skip("repository v5 catalog candidate is not present")
+        pytest.skip("repository v6 catalog candidate is not present")
     result = validate_sqlite_alignments(graph)
     assert {name: a["status"] for name, a in result["alignments"].items()} == {
         name: "PASS" for name in result["alignments"]}

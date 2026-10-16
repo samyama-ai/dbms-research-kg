@@ -159,14 +159,15 @@ Exact values are in `schema/conformance.json` and are enforced by
 
 ## Acceptance evidence and current limits
 
-As of 2026-10-16 the v5 candidate
-(`build/dbms_research_kg.schema-candidate-v5.sqlite`, 21,381 nodes, 55,314
-edges) passes the structural checks, all seven alignments, and the 18 content
-criteria of `python -m etl.quality`; the generated
-[quality report](quality-report.md) lists each measurement. Every one of the 16
-labels and 17 relationship types is populated. Three labels stay below the
-2026-09 graph by design (Paper, Institution, Algorithm), each explained in the
+As of 2026-10-16 the v6 candidate
+(`build/dbms_research_kg.schema-candidate-v6.sqlite`, 20,219 nodes, 53,757
+edges) passes the structural checks, all seven alignments, the 18 content
+criteria of `python -m etl.quality` ([quality report](quality-report.md)), the
+22 items of `python -m etl.audit` ([audit report](audit-report.md)) and the
+48-question check of `python -m etl.question_check`
+([question report](question-report.md)). Every one of the 16 labels and 17
+relationship types is populated. Four labels stay below the 2026-09 graph by
+design (Paper, Person, Institution, Algorithm), each explained in the quality
 report. The project-owned taxonomies, crosswalks, institution list and concept
 hierarchy still need human review before a production load; their assignments
-are `rule-based`, never "verified". The 48-question acceptance check is the
-next step.
+are `rule-based`, never "verified".

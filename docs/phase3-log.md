@@ -327,3 +327,38 @@ python -m etl.quality --graph build/dbms_research_kg.schema-candidate-v5.sqlite 
 
 Still open: human review of the project lists and crosswalks; the 48-question
 check against v5; loading v5 into a Samyama engine.
+
+## 2026-10-16 (later) — v6 candidate and the 48-question check (issue #14)
+
+**Who:** Krithi, with Claude. Branch `feat/kg-48-questions`, stacked on the
+standards audit PR.
+
+1. **Files over 500 lines split** (no output change; rebuilding onto v5 was
+   accepted): `etl/loader.py` → `records.py`, `finalize.py`, `engine_load.py`;
+   `etl/local_graph.py` → `snapshot_graph.py`; `etl/conformance.py` →
+   `alignments.py`. Old imports still work.
+2. **`python -m etl.question_check`** answers all 48 questions on the prepared
+   graph and checks each against values re-read from the raw pages with plain
+   regexes (or, for computed links, the graph's own evidence). Result:
+   17 correct, 8 consistent, 20 limited (documented partial answers whose
+   limit holds), 3 refused, 0 wrong. Report: `docs/question-report.md`.
+3. **Bugs the check found, now fixed** (graph v6):
+
+   | Question | Bug | Fix |
+   |---|---|---|
+   | Q16 | one paper split across nodes when one page cites it by DOI and another by DBLP key (164 papers, 188 extra nodes; *Foundations of Databases* 38 + 27) | `merge_identities`: same identifier, or same title and year without conflicting identifiers; two different DOIs stay two works. Paper 2,913 → 2,679; *Foundations of Databases* 65 (old graph 64) |
+   | Q12, Q24 | person-to-problem links ignored case: author "Panda" matched the algorithm PANDA, author "Tu" matched "TU Munich" on 94 pages | the surname must occur as written |
+   | Q14 | every worked example ended with the page footer | footer removed |
+   | Q22 | `refs_unverified` is a count, read as yes/no, so all 153 references on 25 pages were "unverified" | a reference is unverified only when its own text says so (15); `Problem.refs_unverified` keeps the count |
+   | Q24, Q27, Q29, Q31, Q36, Q40, Q42 | answers counted the wrong end of an edge or returned raw edge lists | rankings fixed in `etl/questions.py` |
+
+   One author list per paper (the most complete clean list among its
+   citations) lowers Person to 4,454: of the 853 names dropped since v5, 831 are
+   other spellings of a surname still present.
+
+| | v5 | v6 |
+|---|---:|---:|
+| Nodes / edges | 21,381 / 55,314 | 20,219 / 53,757 |
+| Paper / Person | 2,913 / 5,267 | 2,679 / 4,454 |
+| Quality / audit / questions | 18 / 22 / — | 18 / 22 / 48 (0 wrong) |
+| Tests | 153 | 173 |
