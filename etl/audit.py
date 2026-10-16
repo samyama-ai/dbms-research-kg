@@ -1,9 +1,9 @@
 """Item-by-item audit of a built graph against docs/standards.md.
 
     python -m etl.audit --graph build/dbms_research_kg.schema-candidate-v5.sqlite \
-        --part taxonomies|all [--report docs/audit-report.md]
+        --part taxonomies|code-lists|all [--report docs/audit-report.md]
 
-One check per listed item: the 4 taxonomies. Exit status is 0 only when every audited
+One check per listed item: the 4 taxonomies and the 12 controlled code lists. Exit status is 0 only when every audited
 item passes.
 """
 from __future__ import annotations
@@ -17,6 +17,7 @@ from pathlib import Path
 
 from etl.conformance import load_spec
 
+CATALOG_STATUS = {"open": 450, "partially-solved": 369, "empirically-open": 227, "solved-but-impractical": 7}
 MAX_UNRESOLVED = 0.10
 
 
@@ -109,7 +110,61 @@ def audit_taxonomies(g: Graph, spec: dict) -> list[dict]:
     ]
 
 
-PARTS = {"taxonomies": ("Taxonomies (4)", audit_taxonomies)}
+# --- controlled code lists (12) -------------------------------------------------------
+
+def audit_code_lists(g: Graph, spec: dict) -> list[dict]:
+    codes = spec["codes"]
+
+    def code_list(item, values, allowed, unknown=(), limit=None, extra=()):
+        missing = sum(v in (None, "") for v in values)
+        outside = sorted({v for v in values if v not in allowed and v not in (None, "")})
+        counts = collections.Counter(values)
+        share = sum(counts[u] for u in unknown) / len(values) if values else 1.0
+        checks = [
+            ("present on every record", missing == 0 and bool(values), f"{len(values) - missing}/{len(values)}"),
+            ("every value is in the closed list", not outside, ", ".join(map(str, outside)) or "0 outside"),
+        ]
+        if limit is not None:
+            checks.append((f"'{'/'.join(unknown)}' share <= {limit:.0%}", share <= limit, f"{share:.1%}"))
+        checks.extend(extra)
+        result = _result(item, checks)
+        result["distribution"] = dict(counts.most_common())
+        return result
+
+    node = lambda label, key: [n.get(key) for n in g.nodes[label]]
+    edge = lambda rel, key: [p.get(key) for _, _, p in g.edges[rel]]
+    status = node("Problem", "status")
+    gap_methods = node("Gap", "verdict_method")
+    raw_kept = sum(1 for _, _, p in g.edges["CITES"] if p.get("role") in ("mixed", "unclassified") and "role_raw" in p)
+    return [
+        code_list("1. Problem.status", status, codes["Problem.status"],
+                  extra=[("counts equal the catalog (450/369/227/7)",
+                          dict(collections.Counter(status)) == CATALOG_STATUS, dict(collections.Counter(status)))]),
+        code_list("2. CITES.role", edge("CITES", "role"), codes["CITES.role"], ("unclassified",), 0.02,
+                  extra=[("raw tag kept for mixed/unclassified roles", raw_kept == sum(
+                      1 for r in edge("CITES", "role") if r in ("mixed", "unclassified")), f"{raw_kept}")]),
+        code_list("3. Gap.verdict", node("Gap", "verdict"), codes["Gap.verdict"], ("unstated",), 0.10,
+                  extra=[("verdict_method in stated/keyword/none",
+                          set(gap_methods) <= set(spec["property_values"]["Gap.verdict_method"]),
+                          dict(collections.Counter(gap_methods)))]),
+        code_list("4. Bound.kind", node("Bound", "kind"), codes["Bound.kind"], ("unclassified",), 0.05),
+        code_list("5. STATE_OF_ART.kind", edge("STATE_OF_ART", "kind"), codes["STATE_OF_ART.kind"]),
+        code_list("6. Person.name_form", node("Person", "name_form"), codes["Person.name_form"]),
+        code_list("7. Venue.kind", node("Venue", "kind"), codes["Venue.kind"], ("other",), 0.25),
+        code_list("8. Institution.kind", node("Institution", "kind"), codes["Institution.kind"]),
+        code_list("9. Problem.problem_type", node("Problem", "problem_type"), codes["Problem.problem_type"],
+                  ("unclassified",), 0.05),
+        code_list("10. Algorithm.family / System.family", node("Algorithm", "family") + node("System", "family"),
+                  codes["Algorithm.family|System.family"], ("unclassified",), 0.10),
+        code_list("11. ComputationModel.class", node("ComputationModel", "class"), codes["ComputationModel.class"],
+                  ("unclassified",), 0.0),
+        code_list("12. CLASSIFIED_AS.evidence_status", edge("CLASSIFIED_AS", "evidence_status"),
+                  codes["CLASSIFIED_AS.evidence_status"], ("unresolved",), 0.10),
+    ]
+
+
+PARTS = {"taxonomies": ("Taxonomies (4)", audit_taxonomies),
+         "code-lists": ("Controlled code lists (12)", audit_code_lists)}
 
 
 def run(path: Path, parts) -> dict:
