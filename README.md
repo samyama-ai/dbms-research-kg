@@ -1,89 +1,45 @@
-# {{KG_NAME}} Knowledge Graph
+# DBMS Research Knowledge Graph
 
-**{{N}} nodes. {{M}} edges. {{ONE_LINE_SCOPE}} from {{K}} sources.**
+A knowledge graph of the 1,053 open problems in the
+[DBMS Research catalog](https://github.com/samyama-ai/dbms_research) (35 topics), built
+for [Samyama Graph](https://github.com/samyama-ai/samyama-graph).
 
-![{{KG_NAME}} demo](demo/{{KG_SLUG}}.gif)
-
-> Part of the **Samyama** ecosystem — loaded into and queried via the graph engine at [samyama-ai/samyama-graph](https://github.com/samyama-ai/samyama-graph).
-> This repo holds the loader and source-data specifics for the KG.
+> **Status: Phase 2 (project setup).** The graph itself is built in later phases; this
+> README is updated with counts, schema and an example query when the graph exists.
 
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue" alt="License"></a>
 
----
+## Source data
 
-We loaded {{SOURCES}} into one graph, then asked:
-
-> *"{{EXAMPLE_QUESTION}}"*
-
-```cypher
-MATCH (a:{{NodeA}})-[:{{REL}}]->(b:{{NodeB}})
-RETURN b.name, count(a) AS n
-ORDER BY n DESC LIMIT 5
-```
-
-**One query across every source.** Powered by [Samyama Graph](https://github.com/samyama-ai/samyama-graph).
-
----
-
-## Demo
-
-A narrated walkthrough on a fast, real subset.
-
-```bash
-python -m demo.demo                                                     # run live
-asciinema rec --overwrite --cols 92 --rows 32 --idle-time-limit 2.0 \
-  -c "bash -c 'python -m demo.demo'" demo/{{KG_SLUG}}.cast              # re-record
-agg demo/{{KG_SLUG}}.cast demo/{{KG_SLUG}}.gif                          # convert to gif
-```
-
----
-
-## Schema
-
-**Node labels** -- {{NODE_LABELS}}
-**Edge types** -- {{EDGE_TYPES}}
-**Data sources** -- {{SOURCES}}
-
-See [`schema/{{KG_SLUG}}_kg.cypher`](schema/{{KG_SLUG}}_kg.cypher) for the full schema.
-
-## Quick Start
+The catalog is fetched at a pinned commit, never edited, and kept out of git:
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
-
-python -m etl.download_data          # fetch source data into data/
-python -m etl.loader                 # build + load the graph
-python -m mcp_server.server          # expose the KG over MCP
-pytest                               # run tests
+pip install -e ".[dev]"
+python -m etl.download_data            # clones into data/dbms_research and writes data/dbms_research.lock.json
+python -m etl.download_data --commit 5fff7f74   # a full or short SHA; update PINNED_COMMIT to keep it
+pytest
 ```
+
+The lock file records the repository, commit, commit date, fetch time and the number of
+problem pages. Rerunning on the same commit keeps the original fetch time.
+
+## Documents
+
+- [docs/scope.md](docs/scope.md): the 48 questions the graph must answer
+- [docs/schema.md](docs/schema.md): the planned schema
+- [docs/phase1-log.md](docs/phase1-log.md), [docs/phase2-log.md](docs/phase2-log.md): work logs
 
 ## Structure
+
 ```
-etl/          # downloaders + graph loader
-schema/       # cypher schema / ontology
+etl/          # downloader (and, later, the graph builder)
+schema/       # schema files
 mcp_server/   # MCP server exposing the KG
-demo/         # narrated demo (cast + gif)
+demo/         # demo (added with the graph)
 benchmarks/   # benchmark queries
-docs/         # design + source notes
+docs/         # design notes and logs
 tests/        # pytest
-pyproject.toml
 ```
 
----
-## Using this template
-1. Click **Use this template** (this repo is a Gitea template) and name your repo `<domain>-kg`.
-2. Find-and-replace the `{{...}}` placeholders (KG_NAME, KG_SLUG, NODE_LABELS, EDGE_TYPES, SOURCES, N, M, K, example query).
-3. Rename `schema/template_kg.cypher` -> `schema/<slug>_kg.cypher` and fill in real node/edge definitions.
-4. Implement the `etl/` downloaders + loader and the `mcp_server/` tools for your domain.
-5. Add the repo to the **samyama-graph** team.
-
-### Placeholder reference
-| Placeholder | Meaning |
-|-------------|---------|
-| `{{KG_NAME}}` | Human name, e.g. "Drug Interactions" |
-| `{{KG_SLUG}}` | file/id slug, e.g. "druginteractions" |
-| `{{NODE_LABELS}}` / `{{EDGE_TYPES}}` | comma-separated schema |
-| `{{SOURCES}}` | data sources + licenses |
-| `{{N}}`/`{{M}}`/`{{K}}` | node/edge/source counts |
-| `{{EXAMPLE_QUESTION}}` / `{{NodeA}}`/`{{REL}}`/`{{NodeB}}` | hero query |
+Data source licence: CC BY 4.0 (the catalog). Code licence: Apache 2.0.
