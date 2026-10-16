@@ -372,7 +372,32 @@ standards audit PR.
 
 | | v5 | v6 |
 |---|---:|---:|
-| Nodes / edges | 21,381 / 55,314 | 20,219 / 53,757 |
+| Nodes / edges | 21,381 / 55,314 | 20,211 / 53,761 |
 | Paper / Person | 2,913 / 5,267 | 2,679 / 4,454 |
 | Quality / audit / questions | 18 / 22 / — | 18 / 22 / 48 (0 wrong) |
 | Tests | 153 | 173 |
+
+## 2026-10-16 (evening) — snapshot, GIF and two loader fixes
+
+**Who:** Krithi, with Claude, on `feat/kg-48-questions` (PR #15).
+
+1. **Merged papers take the most complete citation.** The representative of a merged paper was
+   the citation with the most identifiers, which could be one whose title or year did not parse:
+   *Spanner* (37 problems) showed with no title and 53 papers without their year. It is now the
+   parsed citation with a title, then a year, then the most identifiers. Paper (2,679) and
+   Person (4,454) are unchanged; Venue 685 → 677 and APPEARED_AT 2,605 → 2,609 follow the new
+   representatives. v6 is now **20,211 nodes, 53,761 edges**; quality 18/18, audit 22/22,
+   questions 0 wrong, 180 tests.
+2. **The engine load finishes.** `etl.loader --load` had no indexes and matched edge endpoints
+   inside `UNWIND`, which this engine resolves without the index: about 9 s per 100 edges, and the
+   load died on an HTTP timeout. The loader now runs `schema/dbms_research_kg.cypher` (an `id`
+   index per label) and writes each batch of 50 edges as literal `MATCH … WHERE … MERGE`
+   (0.01 s per 50, still idempotent). The whole graph loads in under three minutes, and the
+   loader fails unless every label and type holds exactly the planned count. RELATED_TO was also
+   looked up under the wrong key (`source_node_id` instead of `problem_id`) and would have
+   loaded no edges.
+3. **Snapshot:** `python -m etl.snapshot export|import` (ported from ai-research-kg) writes
+   `snapshots/dbms-research-kg.sgsnap` and `snapshots/manifest.json` (counts, SHA-256, commit).
+   The `.sgsnap` stays out of git.
+4. **GIF:** `demo/demo.py` (ten questions, each tagged with what its answer rests on) and
+   `demo/record.sh` (asciinema + agg) produce `demo/dbms-research-kg.gif`, shown in the README.

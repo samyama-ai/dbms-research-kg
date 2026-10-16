@@ -160,7 +160,7 @@ Exact values are in `schema/conformance.json` and are enforced by
 ## Acceptance evidence and current limits
 
 As of 2026-10-16 the v6 candidate
-(`build/dbms_research_kg.schema-candidate-v6.sqlite`, 20,219 nodes, 53,757
+(`build/dbms_research_kg.schema-candidate-v6.sqlite`, 20,211 nodes, 53,761
 edges) passes the structural checks, all seven alignments, the 18 content
 criteria of `python -m etl.quality` ([quality report](quality-report.md)), the
 22 items of `python -m etl.audit` ([audit report](audit-report.md)) and the

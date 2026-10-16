@@ -167,9 +167,10 @@ def merge_identities(records: list[dict]) -> list[int]:
     Citations are the same paper when they share an explicit identifier (DOI,
     arXiv id without version, DBLP key), or share normalised title and year
     while their identifiers do not conflict: two different DOIs stay two works
-    (a conference paper and its journal version). The representative is the
-    citation with the most identifiers, earliest in catalog order on ties, so
-    a paper's DOI always occurs in its own citation text.
+    (a conference paper and its journal version). The representative is the most
+    complete citation: parsed, then with a title, then with a year, then with the
+    most identifiers, earliest in catalog order on ties. Its fields all come from
+    its own text, so a paper's DOI always occurs in its own citation.
     """
     parent = list(range(len(records)))
     strong = [_strong_ids(r) for r in records]
@@ -206,10 +207,15 @@ def merge_identities(records: list[dict]) -> list[int]:
             j = first_by_title.setdefault((title, year), i)
             if j != i:
                 union(j, i, check_conflict=True)
+    def completeness(i):
+        record = records[i]
+        return (record.get("parse_status") == "parsed", bool(record.get("title")),
+                bool(record.get("year")), len(strong[i]), -i)
+
     best = {}
     for i in range(len(records)):
         root = find(i)
-        if root not in best or len(strong[i]) > len(strong[best[root]]):
+        if root not in best or completeness(i) > completeness(best[root]):
             best[root] = i
     return [best[find(i)] for i in range(len(records))]
 

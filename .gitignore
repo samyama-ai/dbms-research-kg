@@ -8,3 +8,4 @@ site/
 .env
 *.egg-info/
 build/
+snapshots/*.sgsnap

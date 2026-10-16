@@ -210,9 +210,9 @@ def test_relationship_endpoint_types(rel, record, source, target):
     client = RecordingClient()
     create_relationships(client, rel, [record], 1)
     query = client.queries[0]
-    assert f"MATCH (a:{source} " in query
-    assert f"MATCH (b:{target} " in query
-    assert f"MERGE (a)-[r:{rel}]->(b)" in query
+    # endpoints matched as literals with WHERE (the id index is used), edge MERGEd
+    assert query.startswith(f"MATCH (v0:{source}), (v1:{target}) WHERE v0.id = ")
+    assert f"MERGE (v0)-[:{rel} " in query and query.endswith("]->(v1)")
 
 
 def test_resume_id_check_accepts_existing_legacy_paper_id_and_rejects_mismatch():

@@ -1,6 +1,6 @@
 # DBMS Research Knowledge Graph
 
-**20,219 nodes. 53,757 edges. The 1,053 open problems of database systems research, with the
+**20,211 nodes. 53,761 edges. The 1,053 open problems of database systems research, with the
 papers, people, institutions, algorithms, systems, bounds and gaps behind them, from one
 pinned source.**
 
@@ -60,7 +60,7 @@ read-only tools over MCP for the engine set in `mcp_server/config.yaml`.
 | Problem | 1,053 | CLOSING_REQUIRES | 3,825 |
 | Gap | 1,053 | CLASSIFIED_AS | 3,689 |
 | System | 982 | HAS_RESEARCH | 2,496 |
-| Venue | 685 | APPEARED_AT | 2,605 |
+| Venue | 677 | APPEARED_AT | 2,609 |
 | Algorithm | 585 | HAS_BOUND | 2,106 |
 | Concept | 90 | RESTS_ON | 1,987 |
 | Institution | 82 | IN_MODEL | 1,953 |

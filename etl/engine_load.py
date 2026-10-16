@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 from samyama import SamyamaClient
 
 from etl.citations import paper_identity, parse_citation
-from etl.records import PINNED_COMMIT, chunks, cypher_map
+from etl.records import PINNED_COMMIT, chunks, cypher_map, cypher_string
 
 
 def print_plan(data):
@@ -97,22 +97,29 @@ def create_relationships(client, rel_type, records, batch_size):
     else:
         raise ValueError(f"Unsupported relationship type: {rel_type}")
 
-    for batch in chunks(records, batch_size):
-        rows = "[" + ", ".join(cypher_map(
-            {k: v for k, v in row.items() if k not in {"target_label", "source_label"}}
-        ) for row in batch) + "]"
-        source_id = {
-            "AUTHORED_BY": "paper_id", "APPEARED_AT": "paper_id",
-            "IN_MODEL": "bound_id", "CLASSIFIED_AS": "source_node_id",
-            "ACTIVE_ON": "source_node_id", "AFFILIATED_WITH": "person_id",
-            "GENERALIZES": "source_node_id", "RELATED_TO": "source_node_id",
-        }.get(rel_type, "problem_id")
-        query = (f"UNWIND {rows} AS row "
-                 f"MATCH (a:{source_label} {{id: row.{source_id}}}) "
-                 f"MATCH (b:{target_label} {{id: row.target_id}}) "
-                 f"MERGE (a)-[r:{rel_type}]->(b) "
-                 "SET r += row")
-        client.query(query)
+    source_key = {
+        "AUTHORED_BY": "paper_id", "APPEARED_AT": "paper_id",
+        "IN_MODEL": "bound_id", "CLASSIFIED_AS": "source_node_id",
+        "ACTIVE_ON": "source_node_id", "AFFILIATED_WITH": "person_id",
+        "GENERALIZES": "source_node_id",
+    }.get(rel_type, "problem_id")
+    # Endpoints are matched as literals with WHERE: on engine 1.11.0 an UNWIND row
+    # (inline map or WHERE) does not use the id index and takes ~9 s per 100 edges;
+    # the literal form takes ~0.01 s per 50 (measured 2026-10-16). MERGE with the
+    # edge's full property map keeps a re-run from duplicating edges.
+    for batch in chunks(records, min(batch_size, 50)):
+        var_of, matches, wheres, creates = {}, [], [], []
+        for row in batch:
+            ends = ((source_label, row[source_key]), (target_label, row["target_id"]))
+            for label, node_id in ends:
+                if (label, node_id) not in var_of:
+                    var = f"v{len(var_of)}"
+                    var_of[(label, node_id)] = var
+                    matches.append(f"({var}:{label})")
+                    wheres.append(f"{var}.id = {cypher_string(node_id)}")
+            props = cypher_map({k: v for k, v in row.items() if k not in {"target_label", "source_label"}})
+            creates.append(f"MERGE ({var_of[ends[0]]})-[:{rel_type} {props}]->({var_of[ends[1]]})")
+        client.query(f"MATCH {', '.join(matches)} WHERE {' AND '.join(wheres)} {' '.join(creates)}")
 
 
 def validate_paper_resume_ids(client, papers):
@@ -214,6 +221,13 @@ def main():
     if aliases:
         print(f"Existing alternate Paper nodes for canonical works: {aliases}; retained without deletion.")
 
+    schema = Path(__file__).resolve().parents[1] / "schema" / "dbms_research_kg.cypher"
+    print("\nCreating indexes...")
+    code = "\n".join(line for line in schema.read_text(encoding="utf-8").splitlines()
+                     if not line.strip().startswith("//"))
+    for statement in (s.strip() for s in code.split(";")):
+        if statement:
+            client.query(statement)
     print("\nCreating nodes...")
     from etl.conformance import load_spec
     labels = tuple(load_spec()["labels"])
@@ -223,6 +237,9 @@ def main():
 
     print("\nCreating relationships...")
     relationships = tuple(load_spec()["relationships"])
+    def edge_count(rel):
+        return client.query_readonly(f"MATCH ()-[r:{rel}]->() RETURN count(r)").records[0][0]
+
     for rel_type in relationships:
         print(f"  {rel_type}: {len(data[rel_type]):,}")
         create_relationships(client, rel_type, data[rel_type], args.batch_size)
@@ -239,5 +256,13 @@ def main():
         relationships
     ))
 
-    print("PASS: load batches completed. MERGE makes repeated runs idempotent by node id and edge endpoints.")
+    # A batch with an unresolvable endpoint is dropped silently by the engine, so count everything.
+    wrong = {rel: (edge_count(rel), len(data[rel])) for rel in relationships if edge_count(rel) != len(data[rel])}
+    wrong.update({label: (client.query_readonly(f"MATCH (n:{label}) RETURN count(n)").records[0][0], len(data[label]))
+                  for label in labels})
+    wrong = {k: v for k, v in wrong.items() if v[0] != v[1]}
+    if wrong:
+        print(f"FAIL: loaded counts differ from the plan (loaded, planned): {wrong}", file=sys.stderr)
+        return 1
+    print("PASS: every node label and relationship type holds exactly the planned count.")
     return 0
