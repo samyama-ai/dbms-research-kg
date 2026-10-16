@@ -44,10 +44,10 @@ All are closed schemes in `schema/conformance.json`. The first is source-defined
 the other three are project classification schemes and each assignment records
 `CLASSIFIED_AS.evidence_status` (`source-explicit`, `rule-based`, `unresolved`).
 
-1. **DBMS topic taxonomy:** 35 flat, source-ordered topic folders from pinned
+1. **DBMS topic taxonomy** (scheme `dbms-topic`): 35 flat, source-ordered topic folders from pinned
    `TAXONOMY.md`; `Problem→Topic` is exactly one-to-one per page. No inferred
    parent groupings.
-2. **Problem type:** flat codes `query-evaluation`, `query-optimization`,
+2. **Problem type** (scheme `problem-type`): flat codes `query-evaluation`, `query-optimization`,
    `data-modeling`, `data-integration`, `transaction-processing`,
    `storage-indexing`, `distributed-data`, `analytics`, `system-design`,
    `other`, `unclassified`. First matching explicit keyword rule over title and
@@ -56,7 +56,7 @@ the other three are project classification schemes and each assignment records
    `TOPIC_PROBLEM_TYPE` crosswalk in `etl/source_entities.py`
    (`problem_type_method=topic-crosswalk`, evidence = the topic id). Both are
    `rule-based`; `unclassified` remains only if neither applies.
-3. **Solution/technique family:** flat codes `join-processing`,
+3. **Solution/technique family** (scheme `solution-technique-family`): flat codes `join-processing`,
    `query-optimization`, `decomposition`, `indexing`,
    `transaction-processing`, `distributed-processing`, `analytics`, `storage`,
    `relational-dbms`, `analytical-dbms`, `streaming-system`, `query-engine`,
@@ -65,7 +65,7 @@ the other three are project classification schemes and each assignment records
    that cite the name as state of the art decides through the
    `TOPIC_TECHNIQUE_FAMILY` crosswalk (`family_method=topic-crosswalk`, evidence
    `topic NN`). Both are `rule-based`.
-4. **Computational-model/workload:** flat codes `word-ram`, `cell-probe`,
+4. **Computational model/workload** (scheme `computation-model-workload`): flat codes `word-ram`, `cell-probe`,
    `external-memory`, `comparison`, `streaming`, `parallel`, `turing`,
    `fine-grained` (SETH, 3SUM, APSP, OMv), `complexity-class` (NP, coNP, PSPACE,
    W[1], undecidability), `information-theoretic`, `distributed-impossibility`
